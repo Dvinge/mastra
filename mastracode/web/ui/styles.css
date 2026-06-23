@@ -9,7 +9,9 @@
   --bg-elevated: #1a1d27;
   --fg: #e8eaf0;
   --fg-dim: #9aa1b2;
-  --fg-muted: #5a6072;
+  /* Lifted from #5a6072 to clear WCAG AA (>=4.5:1) for small secondary text on
+     dark surfaces (status line, timestamps, captions, tool metadata). */
+  --fg-muted: #868ca1;
   /* MastraCode identity: indigo→violet accent. */
   --accent: #8b7bf7;
   --accent-2: #b18bff;
@@ -1372,6 +1374,11 @@ body::before {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 500;
+}
+.sidebar-thread-title.untitled {
+  color: var(--fg-muted);
+  font-style: italic;
+  font-weight: 400;
 }
 
 .sidebar-thread-date {

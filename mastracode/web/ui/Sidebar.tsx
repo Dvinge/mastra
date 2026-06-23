@@ -8,6 +8,21 @@ import { addProject, loadProjects, removeProject } from './projects';
 
 const MAX_THREADS = 5;
 
+/** Compact relative time, e.g. "just now", "5m", "3h", "2d", or a date. */
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const diff = Date.now() - then;
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}d`;
+  return new Date(then).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 interface SidebarProps {
   projects: Project[];
   activeProjectId: string | null;
@@ -151,9 +166,11 @@ export function Sidebar({
               className={`sidebar-thread ${t.id === activeThreadId ? 'active' : ''}`}
               onClick={() => onSwitchThread(t.id)}
             >
-              <span className="sidebar-thread-title">{t.title || t.id.slice(0, 12)}</span>
+              <span className={`sidebar-thread-title ${t.title ? '' : 'untitled'}`}>
+                {t.title || 'Untitled'}
+              </span>
               {t.updatedAt && (
-                <span className="sidebar-thread-date">{new Date(t.updatedAt).toLocaleDateString()}</span>
+                <span className="sidebar-thread-date">{relativeTime(t.updatedAt)}</span>
               )}
               <span
                 className="sidebar-thread-remove"
