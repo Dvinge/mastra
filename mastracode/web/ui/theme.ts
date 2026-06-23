@@ -30,3 +30,32 @@ export function saveTheme(theme: Theme): void {
 export function applyTheme(theme: Theme): void {
   document.documentElement.setAttribute('data-theme', theme);
 }
+
+// ── Density preference ────────────────────────────────────────────────────
+
+export type Density = 'comfortable' | 'compact';
+
+const DENSITY_KEY = 'mastracode.density';
+
+export function loadDensity(): Density {
+  try {
+    const stored = localStorage.getItem(DENSITY_KEY);
+    if (stored === 'comfortable' || stored === 'compact') return stored;
+  } catch {
+    /* localStorage unavailable */
+  }
+  return 'comfortable';
+}
+
+export function saveDensity(density: Density): void {
+  try {
+    localStorage.setItem(DENSITY_KEY, density);
+  } catch {
+    /* non-fatal */
+  }
+}
+
+/** Reflect density onto the document root so CSS can tighten spacing. */
+export function applyDensity(density: Density): void {
+  document.documentElement.setAttribute('data-density', density);
+}

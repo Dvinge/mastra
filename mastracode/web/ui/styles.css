@@ -233,15 +233,66 @@ body::before {
 
 .transcript-empty {
   margin: auto;
-  max-width: 420px;
+  max-width: 560px;
+  width: 100%;
   text-align: center;
   color: var(--fg-dim);
   font-size: 14px;
   line-height: 1.6;
-  padding: 28px 24px;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--bg-surface) 40%, transparent);
+  padding: 32px 24px;
+}
+.empty-icon {
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  color: var(--accent);
+  filter: drop-shadow(0 6px 18px var(--accent-soft));
+  animation: floatIn 0.45s ease-out;
+}
+.empty-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.empty-sub { margin: 0 0 18px; font-size: 13px; }
+.empty-suggestions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  text-align: left;
+}
+.suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-surface2);
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, transform 0.1s;
+}
+.suggestion:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: var(--bg-surface3);
+  transform: translateY(-1px);
+}
+.suggestion-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.suggestion-text {
+  font-size: 12.5px;
+  color: var(--fg-dim);
+  line-height: 1.45;
+}
+@media (max-width: 768px) {
+  .empty-suggestions { grid-template-columns: 1fr; }
 }
 
 .composer {
@@ -1531,6 +1582,78 @@ body::before {
   border-radius: 4px;
   padding: 1px 5px;
 }
+
+/* ── Settings panel ────────────────────────────────────────────────────── */
+
+.settings-panel {
+  width: min(92vw, 460px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: floatIn 0.16s ease-out;
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-title { margin: 0; font-size: 15px; font-weight: 700; }
+.settings-close {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+}
+.settings-close:hover { background: var(--bg-surface3); color: var(--fg); }
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+}
+.settings-row + .settings-row { border-top: 1px solid var(--border-light); }
+.settings-label { display: flex; flex-direction: column; gap: 2px; }
+.settings-label > span:first-child { font-size: 13.5px; font-weight: 600; color: var(--fg); }
+.settings-hint { font-size: 11.5px; color: var(--fg-muted); }
+
+.seg {
+  display: inline-flex;
+  background: var(--bg-surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  flex-shrink: 0;
+}
+.seg-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-dim);
+  padding: 5px 11px;
+  border-radius: 5px;
+  transition: background 0.14s, color 0.14s;
+}
+.seg-btn.active { background: var(--bg-surface); color: var(--fg); box-shadow: var(--shadow-sm); }
+.seg-btn:hover:not(.active) { color: var(--fg); }
+
+/* Compact density: tighten the conversation rhythm and chrome. */
+[data-density='compact'] .transcript { gap: 10px; padding-top: 14px; }
+[data-density='compact'] .bubble-user { padding: 7px 11px; }
+[data-density='compact'] .msg { gap: 3px; }
+[data-density='compact'] .tool-card { margin-top: 4px; }
+[data-density='compact'] .composer { padding: 8px 18px; }
 
 /* ── Connection banner ─────────────────────────────────────────────────── */
 

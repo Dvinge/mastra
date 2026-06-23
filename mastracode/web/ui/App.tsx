@@ -3,10 +3,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { matchCommands, SLASH_COMMANDS } from './commands';
 import { GoalPanel, StatusLine, Transcript } from './components';
 import { CommandPalette } from './CommandPalette';
-import { applyTheme, loadTheme, saveTheme } from './theme';
-import type { Theme } from './theme';
+import { SettingsPanel } from './SettingsPanel';
+import { applyDensity, applyTheme, loadDensity, loadTheme, saveDensity, saveTheme } from './theme';
+import type { Density, Theme } from './theme';
 import type { SlashCommand } from './commands';
-import { LogoMark, MenuIcon, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
+import { GearIcon, LogoMark, MenuIcon, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
 import {
   loadProjects,
   DEFAULT_RESOURCE_ID,
@@ -17,6 +18,19 @@ import {
 import type { Project } from './projects';
 import { Sidebar } from './Sidebar';
 import { useHarnessSession } from './useHarnessSession';
+
+interface SuggestedPrompt {
+  label: string;
+  prompt: string;
+}
+
+/** Starter prompts shown in an empty thread to get the user going. */
+const SUGGESTED_PROMPTS: SuggestedPrompt[] = [
+  { label: 'Explore', prompt: 'Give me a high-level tour of this codebase — key directories and how they fit together.' },
+  { label: 'Explain', prompt: 'Explain what the main entry point does and how a request flows through it.' },
+  { label: 'Find', prompt: 'Find where errors are handled and summarize the patterns used.' },
+  { label: 'Improve', prompt: 'Suggest three concrete improvements to code quality or structure, with reasons.' },
+];
 
 export default function App() {
   // ── Projects (localStorage) ─────────────────────────────────────────
@@ -268,11 +282,24 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
-  const toggleTheme = () => {
-    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+  const changeTheme = (next: Theme) => {
     setTheme(next);
     saveTheme(next);
   };
+  const toggleTheme = () => changeTheme(theme === 'dark' ? 'light' : 'dark');
+
+  // Density preference (comfortable/compact), persisted and applied to <html>.
+  const [density, setDensity] = useState<Density>(() => loadDensity());
+  useEffect(() => {
+    applyDensity(density);
+  }, [density]);
+  const changeDensity = (next: Density) => {
+    setDensity(next);
+    saveDensity(next);
+  };
+
+  // Settings modal.
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Off-canvas sidebar for narrow screens.
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -291,6 +318,7 @@ export default function App() {
         return;
       }
       if (e.key === 'Escape') {
+        if (settingsOpen) { setSettingsOpen(false); return; }
         if (paletteOpen) { setPaletteOpen(false); return; }
         if (sidebarOpen) { setSidebarOpen(false); return; }
         if (busy) { void abort(); }
@@ -298,7 +326,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [paletteOpen, sidebarOpen, busy, abort]);
+  }, [paletteOpen, sidebarOpen, busy, abort, settingsOpen]);
 
   // Run a command chosen from the palette. Commands that take arguments pre-fill
   // the composer (so the user can supply them); no-arg commands execute now.
@@ -349,6 +377,9 @@ export default function App() {
             <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
               {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </button>
+            <button className="theme-toggle" onClick={() => setSettingsOpen(true)} title="Settings" aria-label="Open settings">
+              <GearIcon />
+            </button>
           </div>
         </header>
 
@@ -382,7 +413,25 @@ export default function App() {
         <div className="transcript" ref={threadRef}>
           {transcript.entries.length === 0 && (
             <div className="transcript-empty">
-              Working in {activeProject.name}. Ask the agent to read, write, or run code.
+              <div className="empty-icon"><LogoMark size={32} /></div>
+              <h3 className="empty-title">Working in {activeProject.name}</h3>
+              <p className="empty-sub">Ask the agent to read, write, or run code — or start with one of these:</p>
+              <div className="empty-suggestions">
+                {SUGGESTED_PROMPTS.map(s => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    className="suggestion"
+                    onClick={() => {
+                      setDraft(s.prompt);
+                      inputRef.current?.focus();
+                    }}
+                  >
+                    <span className="suggestion-label">{s.label}</span>
+                    <span className="suggestion-text">{s.prompt}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <Transcript
@@ -454,6 +503,16 @@ export default function App() {
 
       {paletteOpen && activeProject && (
         <CommandPalette onRun={runPaletteCommand} onClose={() => setPaletteOpen(false)} />
+      )}
+
+      {settingsOpen && (
+        <SettingsPanel
+          theme={theme}
+          density={density}
+          onThemeChange={changeTheme}
+          onDensityChange={changeDensity}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
     </div>
   );
