@@ -11,6 +11,7 @@ import { Hono } from 'hono';
 import { createMastraCode } from '../index.js';
 import type { MastraCodeConfig } from '../index.js';
 
+import { mountConfigRoutes } from './config-routes.js';
 import { mountFsRoutes } from './fs-routes.js';
 import { mountHarnessRoutes } from './hono-routes.js';
 import type { ServerRouteLike } from './hono-routes.js';
@@ -69,6 +70,9 @@ export async function startWebServer(options: WebServerOptions = {}): Promise<We
   // Server-side directory browser for the project picker (browser can't read
   // absolute paths). Confined to fsRoot (default: home dir).
   mountFsRoutes(app, { root: fsRoot });
+  // Provider + API-key management for the settings panel (mirrors the TUI's
+  // /api-keys command). Reuses the harness model catalog + the credential store.
+  mountConfigRoutes(app, { harness, authStorage: result.authStorage });
 
   // Serve the built UI when available (production / `mastracode web`).
   const resolvedUiDir = uiDir ?? defaultUiDir();

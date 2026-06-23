@@ -1,5 +1,6 @@
 import type { HarnessAvailableModel } from '@mastra/client-js';
 
+import { ProvidersSection } from './ProvidersSection';
 import type { Density, Theme } from './theme';
 
 interface SettingsPanelProps {
@@ -7,6 +8,7 @@ interface SettingsPanelProps {
   density: Density;
   models: HarnessAvailableModel[];
   currentModelId: string | null;
+  baseUrl?: string;
   onThemeChange: (theme: Theme) => void;
   onDensityChange: (density: Density) => void;
   onModelChange: (modelId: string) => void;
@@ -19,6 +21,7 @@ export function SettingsPanel({
   density,
   models,
   currentModelId,
+  baseUrl,
   onThemeChange,
   onDensityChange,
   onModelChange,
@@ -108,6 +111,8 @@ export function SettingsPanel({
             </button>
           </div>
         </div>
+
+        <ProvidersSection baseUrl={baseUrl} />
       </div>
     </div>
   );
