@@ -267,9 +267,10 @@ body::before {
 }
 .suggestion {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 11px 13px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-surface2);
@@ -281,17 +282,36 @@ body::before {
   background: var(--bg-surface3);
   transform: translateY(-1px);
 }
+.suggestion-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 .suggestion-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
 }
 .suggestion-text {
-  font-size: 12.5px;
-  color: var(--fg-dim);
-  line-height: 1.45;
+  font-size: 12px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.suggestion-arrow {
+  flex-shrink: 0;
+  color: var(--fg-muted);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.14s, transform 0.14s, color 0.14s;
+}
+.suggestion:hover .suggestion-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--accent);
 }
 @media (max-width: 768px) {
   .empty-suggestions { grid-template-columns: 1fr; }

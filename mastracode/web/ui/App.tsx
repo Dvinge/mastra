@@ -8,7 +8,7 @@ import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { applyDensity, applyTheme, loadDensity, loadTheme, saveDensity, saveTheme } from './theme';
 import type { Density, Theme } from './theme';
 import type { SlashCommand } from './commands';
-import { GearIcon, LogoMark, MenuIcon, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
+import { ChevronIcon, GearIcon, LogoMark, MenuIcon, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
 import {
   loadProjects,
   DEFAULT_RESOURCE_ID,
@@ -23,29 +23,30 @@ import { useHarnessSession } from './useHarnessSession';
 
 interface SuggestedPrompt {
   label: string;
+  desc: string;
   prompt: string;
 }
 
 /** Starter prompts shown in an empty thread, keyed by mode. */
 const PROMPTS_DEFAULT: SuggestedPrompt[] = [
-  { label: 'Explore', prompt: 'Give me a high-level tour of this codebase — key directories and how they fit together.' },
-  { label: 'Explain', prompt: 'Explain what the main entry point does and how a request flows through it.' },
-  { label: 'Find', prompt: 'Find where errors are handled and summarize the patterns used.' },
-  { label: 'Improve', prompt: 'Suggest three concrete improvements to code quality or structure, with reasons.' },
+  { label: 'Explore', desc: 'Tour the codebase', prompt: 'Give me a high-level tour of this codebase — key directories and how they fit together.' },
+  { label: 'Explain', desc: 'How a request flows', prompt: 'Explain what the main entry point does and how a request flows through it.' },
+  { label: 'Find', desc: 'Error-handling patterns', prompt: 'Find where errors are handled and summarize the patterns used.' },
+  { label: 'Improve', desc: 'Suggest improvements', prompt: 'Suggest three concrete improvements to code quality or structure, with reasons.' },
 ];
 
 const PROMPTS_PLAN: SuggestedPrompt[] = [
-  { label: 'Plan', prompt: 'Draft a step-by-step plan to add a new feature, including the files to touch.' },
-  { label: 'Investigate', prompt: 'Investigate how a request flows through this codebase and map the key components.' },
-  { label: 'Assess', prompt: 'Assess the main risks and trade-offs before changing the core architecture.' },
-  { label: 'Compare', prompt: 'Compare two approaches for solving a problem here and recommend one with reasons.' },
+  { label: 'Plan', desc: 'Draft a feature plan', prompt: 'Draft a step-by-step plan to add a new feature, including the files to touch.' },
+  { label: 'Investigate', desc: 'Map the components', prompt: 'Investigate how a request flows through this codebase and map the key components.' },
+  { label: 'Assess', desc: 'Risks & trade-offs', prompt: 'Assess the main risks and trade-offs before changing the core architecture.' },
+  { label: 'Compare', desc: 'Weigh two approaches', prompt: 'Compare two approaches for solving a problem here and recommend one with reasons.' },
 ];
 
 const PROMPTS_BUILD: SuggestedPrompt[] = [
-  { label: 'Implement', prompt: 'Implement a small, well-scoped improvement and run the relevant checks.' },
-  { label: 'Fix', prompt: 'Find a bug or rough edge in this codebase and fix it with a test.' },
-  { label: 'Refactor', prompt: 'Refactor a messy area for clarity without changing behavior, then verify.' },
-  { label: 'Test', prompt: 'Add tests for an undertested module and make sure they pass.' },
+  { label: 'Implement', desc: 'Ship a small change', prompt: 'Implement a small, well-scoped improvement and run the relevant checks.' },
+  { label: 'Fix', desc: 'Find & fix a bug', prompt: 'Find a bug or rough edge in this codebase and fix it with a test.' },
+  { label: 'Refactor', desc: 'Clean up for clarity', prompt: 'Refactor a messy area for clarity without changing behavior, then verify.' },
+  { label: 'Test', desc: 'Cover an untested area', prompt: 'Add tests for an undertested module and make sure they pass.' },
 ];
 
 /** Pick the starter prompts that fit the active mode. */
@@ -474,8 +475,11 @@ export default function App() {
                       inputRef.current?.focus();
                     }}
                   >
-                    <span className="suggestion-label">{s.label}</span>
-                    <span className="suggestion-text">{s.prompt}</span>
+                    <span className="suggestion-main">
+                      <span className="suggestion-label">{s.label}</span>
+                      <span className="suggestion-text">{s.desc}</span>
+                    </span>
+                    <ChevronIcon size={14} className="suggestion-arrow" />
                   </button>
                 ))}
               </div>
