@@ -72,30 +72,82 @@ const STATUS_LABEL: Record<ToolCall['status'], string> = {
   error: 'Failed',
 };
 
+/** A unified-diff-style view of an edit's before/after text. */
+function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
+  const removed = oldText.split('\n');
+  const added = newText.split('\n');
+  return (
+    <div className="diff" role="group" aria-label="File change">
+      {removed.map((line, i) => (
+        <div key={`r${i}`} className="diff-line removed">
+          <span className="diff-gutter">-</span>
+          <span className="diff-text">{line || ' '}</span>
+        </div>
+      ))}
+      {added.map((line, i) => (
+        <div key={`a${i}`} className="diff-line added">
+          <span className="diff-gutter">+</span>
+          <span className="diff-text">{line || ' '}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface EditArgs {
+  path?: string;
+  old_string?: string;
+  new_string?: string;
+  content?: string;
+}
+
+/** Detect edit-style tools whose args are better shown as a diff/code block. */
+function editArgs(toolName: string, args: unknown): EditArgs | undefined {
+  if (!args || typeof args !== 'object') return undefined;
+  const a = args as EditArgs;
+  const isReplace = /string_replace|str_replace/i.test(toolName) && typeof a.new_string === 'string';
+  const isWrite = /write_file|create_file/i.test(toolName) && typeof a.content === 'string';
+  return isReplace || isWrite ? a : undefined;
+}
+
 function ToolCard({ tool }: { tool: ToolCall }) {
   const [expanded, setExpanded] = useState(false);
   const argsPreview = tool.args !== undefined ? JSON.stringify(tool.args) : tool.argsText;
   const argsPretty = tool.args !== undefined ? stringify(tool.args) : tool.argsText;
   const resultText = tool.status !== 'running' && tool.result !== undefined ? stringify(tool.result) : undefined;
+  const edit = editArgs(tool.toolName, tool.args);
 
   return (
     <div className={`tool-card ${tool.status}`}>
       <button type="button" className="tool-head" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>
         <span className="tool-icon"><ToolIcon name={tool.toolName} /></span>
         <span className="tool-name">{tool.toolName}</span>
-        {argsPreview && !expanded && <span className="tool-args-preview">{truncate(argsPreview, 72)}</span>}
+        {edit?.path && !expanded && <span className="tool-args-preview">{edit.path}</span>}
+        {!edit && argsPreview && !expanded && <span className="tool-args-preview">{truncate(argsPreview, 72)}</span>}
         <span className={`tool-status-label ${tool.status}`}>{STATUS_LABEL[tool.status]}</span>
         <span className={`tool-status ${tool.status}`} title={STATUS_LABEL[tool.status]} />
         <ChevronIcon size={13} className={`tool-chevron ${expanded ? 'open' : ''}`} />
       </button>
       {expanded && (
         <div className="tool-body">
-          {argsPretty && (
+          {edit ? (
+            <div className="tool-section">
+              <div className="tool-section-head">
+                <span>{edit.path ?? 'Change'}</span>
+                <CopyButton text={edit.content ?? edit.new_string ?? ''} />
+              </div>
+              {edit.new_string !== undefined ? (
+                <DiffView oldText={edit.old_string ?? ''} newText={edit.new_string} />
+              ) : (
+                <pre className="result-block">{truncate(edit.content ?? '', 2000)}</pre>
+              )}
+            </div>
+          ) : argsPretty ? (
             <div className="tool-section">
               <div className="tool-section-head"><span>Arguments</span><CopyButton text={argsPretty} /></div>
               <pre className="result-block">{argsPretty}</pre>
             </div>
-          )}
+          ) : null}
           {tool.output && (
             <div className="tool-section">
               <div className="tool-section-head"><span>Output</span><CopyButton text={tool.output} /></div>

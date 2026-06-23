@@ -38,25 +38,28 @@
 }
 
 [data-theme='light'] {
-  --bg: #fbfbfd;
+  /* Page is a soft grey so white surfaces (header, sidebar, cards) read as
+     distinct, elevated layers rather than blending into the background. */
+  --bg: #eef0f5;
   --bg-surface: #ffffff;
-  --bg-surface2: #f3f4f8;
-  --bg-surface3: #e9eaf1;
+  --bg-surface2: #f4f5f9;
+  --bg-surface3: #e7e9f1;
   --bg-elevated: #ffffff;
-  --fg: #1a1c25;
-  --fg-dim: #5c6172;
-  --fg-muted: #a7adbd;
-  --accent: #6d56e8;
-  --accent-2: #8b5cf6;
-  --accent-hover: #5a44d6;
-  --accent-soft: rgba(109, 86, 232, 0.1);
-  --accent-ring: rgba(109, 86, 232, 0.32);
-  --border: #e6e8f0;
-  --border-strong: #d4d7e3;
-  --border-light: #eef0f5;
-  --green: #1a9c5b;
-  --yellow: #b07d12;
-  --red: #e5484d;
+  --fg: #15171f;
+  --fg-dim: #545a6b;
+  /* Darkened from #a7adbd to clear WCAG AA (>=4.5:1) for small secondary text. */
+  --fg-muted: #6b7184;
+  --accent: #5a44d6;
+  --accent-2: #7c5cf0;
+  --accent-hover: #4a37c0;
+  --accent-soft: rgba(90, 68, 214, 0.1);
+  --accent-ring: rgba(90, 68, 214, 0.34);
+  --border: #dcdfea;
+  --border-strong: #c6cad9;
+  --border-light: #e8eaf2;
+  --green: #138a4f;
+  --yellow: #9a6b0f;
+  --red: #d83a3f;
   --error: #e5484d;
   --blue: #2b7fff;
   --purple: #8b5cf6;
@@ -716,6 +719,40 @@ body::before {
   font-size: 12px;
   margin-top: 2px;
 }
+
+/* ── Diff view (edit-tool args) ────────────────────────────────────────── */
+
+.diff {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.diff-line {
+  display: flex;
+  white-space: pre;
+}
+.diff-gutter {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  user-select: none;
+  opacity: 0.7;
+}
+.diff-text { flex: 1; padding-right: 10px; }
+.diff-line.removed {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: color-mix(in srgb, var(--red) 80%, var(--fg));
+}
+.diff-line.removed .diff-gutter { color: var(--red); }
+.diff-line.added {
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: color-mix(in srgb, var(--green) 80%, var(--fg));
+}
+.diff-line.added .diff-gutter { color: var(--green); }
 
 /* ── Subagent card ──────────────────────────────────────────────────────── */
 
