@@ -541,6 +541,34 @@ body::before {
   animation: pulse 1s ease-in-out infinite;
 }
 
+/* ── Tool group header ──────────────────────────────────────────────────── */
+
+.tool-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 0 2px 2px;
+}
+.tool-group-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.tool-group-toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+}
+.tool-group-toggle:hover { background: var(--bg-surface2); }
+
 /* ── Tool card ──────────────────────────────────────────────────────────── */
 
 .tool-card {

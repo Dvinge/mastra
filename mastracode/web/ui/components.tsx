@@ -1,5 +1,5 @@
 import type { PlanResume } from '@mastra/client-js';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { BellIcon, BrainIcon, ChevronIcon, CopyIcon, FolderIcon, LogoMark, TargetIcon, ToolIcon } from './icons';
 import { highlightCode, languageForPath } from './highlight';
@@ -125,8 +125,12 @@ function editArgs(toolName: string, args: unknown): EditArgs | undefined {
   return isReplace || isWrite ? a : undefined;
 }
 
-function ToolCard({ tool }: { tool: ToolCall }) {
+function ToolCard({ tool, forceExpanded }: { tool: ToolCall; forceExpanded?: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  // When the parent toggles "expand/collapse all", follow that signal.
+  useEffect(() => {
+    if (forceExpanded !== undefined) setExpanded(forceExpanded);
+  }, [forceExpanded]);
   const argsPreview = tool.args !== undefined ? JSON.stringify(tool.args) : tool.argsText;
   const argsPretty = tool.args !== undefined ? stringify(tool.args) : tool.argsText;
   const resultText = tool.status !== 'running' && tool.result !== undefined ? stringify(tool.result) : undefined;
@@ -455,7 +459,10 @@ function UserBubble({ entry }: { entry: UserEntry }) {
 }
 
 function AssistantBubble({ entry }: { entry: AssistantEntry }) {
+  // null = no group override; true/false = expand/collapse all in this bubble.
+  const [allExpanded, setAllExpanded] = useState<boolean | undefined>(undefined);
   if (!entry.text && entry.tools.length === 0) return null;
+  const toolCount = entry.tools.length;
   return (
     <div className="msg msg-assistant">
       <div className="msg-head">
@@ -469,8 +476,23 @@ function AssistantBubble({ entry }: { entry: AssistantEntry }) {
             {entry.streaming && <span className="streaming-cursor" />}
           </div>
         )}
+        {toolCount > 1 && (
+          <div className="tool-group-head">
+            <span className="tool-group-count">
+              {toolCount} tool {toolCount === 1 ? 'call' : 'calls'}
+            </span>
+            <button
+              type="button"
+              className="tool-group-toggle"
+              onClick={() => setAllExpanded(v => !v)}
+              aria-pressed={allExpanded === true}
+            >
+              {allExpanded ? 'Collapse all' : 'Expand all'}
+            </button>
+          </div>
+        )}
         {entry.tools.map(t => (
-          <ToolCard key={t.toolCallId} tool={t} />
+          <ToolCard key={t.toolCallId} tool={t} forceExpanded={allExpanded} />
         ))}
       </div>
     </div>

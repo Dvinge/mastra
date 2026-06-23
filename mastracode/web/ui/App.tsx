@@ -26,13 +26,34 @@ interface SuggestedPrompt {
   prompt: string;
 }
 
-/** Starter prompts shown in an empty thread to get the user going. */
-const SUGGESTED_PROMPTS: SuggestedPrompt[] = [
+/** Starter prompts shown in an empty thread, keyed by mode. */
+const PROMPTS_DEFAULT: SuggestedPrompt[] = [
   { label: 'Explore', prompt: 'Give me a high-level tour of this codebase — key directories and how they fit together.' },
   { label: 'Explain', prompt: 'Explain what the main entry point does and how a request flows through it.' },
   { label: 'Find', prompt: 'Find where errors are handled and summarize the patterns used.' },
   { label: 'Improve', prompt: 'Suggest three concrete improvements to code quality or structure, with reasons.' },
 ];
+
+const PROMPTS_PLAN: SuggestedPrompt[] = [
+  { label: 'Plan', prompt: 'Draft a step-by-step plan to add a new feature, including the files to touch.' },
+  { label: 'Investigate', prompt: 'Investigate how a request flows through this codebase and map the key components.' },
+  { label: 'Assess', prompt: 'Assess the main risks and trade-offs before changing the core architecture.' },
+  { label: 'Compare', prompt: 'Compare two approaches for solving a problem here and recommend one with reasons.' },
+];
+
+const PROMPTS_BUILD: SuggestedPrompt[] = [
+  { label: 'Implement', prompt: 'Implement a small, well-scoped improvement and run the relevant checks.' },
+  { label: 'Fix', prompt: 'Find a bug or rough edge in this codebase and fix it with a test.' },
+  { label: 'Refactor', prompt: 'Refactor a messy area for clarity without changing behavior, then verify.' },
+  { label: 'Test', prompt: 'Add tests for an undertested module and make sure they pass.' },
+];
+
+/** Pick the starter prompts that fit the active mode. */
+function promptsForMode(modeId: string | undefined): SuggestedPrompt[] {
+  if (modeId === 'plan') return PROMPTS_PLAN;
+  if (modeId === 'build') return PROMPTS_BUILD;
+  return PROMPTS_DEFAULT;
+}
 
 export default function App() {
   const { toast } = useToast();
@@ -443,7 +464,7 @@ export default function App() {
               <h3 className="empty-title">Working in {activeProject.name}</h3>
               <p className="empty-sub">Ask the agent to read, write, or run code — or start with one of these:</p>
               <div className="empty-suggestions">
-                {SUGGESTED_PROMPTS.map(s => (
+                {promptsForMode(transcript.modeId).map(s => (
                   <button
                     key={s.label}
                     type="button"
