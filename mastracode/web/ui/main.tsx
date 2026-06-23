@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 
 import App from './App';
 import './styles.css';
+import { ToastProvider } from './toast';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </StrictMode>,
 );

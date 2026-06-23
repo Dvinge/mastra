@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { BellIcon, BrainIcon, ChevronIcon, CopyIcon, FolderIcon, LogoMark, TargetIcon, ToolIcon } from './icons';
 import { highlightCode, languageForPath } from './highlight';
 import { Markdown } from './Markdown';
+import { useToast } from './toast';
 
 import type {
   ApprovalPrompt,
@@ -45,6 +46,7 @@ function lastSegment(id: string): string {
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   return (
     <button
       type="button"
@@ -55,6 +57,7 @@ function CopyButton({ text }: { text: string }) {
         e.stopPropagation();
         void navigator.clipboard?.writeText(text);
         setCopied(true);
+        toast('Copied to clipboard', 'success');
         setTimeout(() => setCopied(false), 1200);
       }}
     >

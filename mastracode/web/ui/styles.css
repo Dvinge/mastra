@@ -993,6 +993,11 @@ body::before {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes workingBounce {
   0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
   40% { transform: translateY(-4px); opacity: 1; }
@@ -1654,6 +1659,84 @@ body::before {
 [data-density='compact'] .msg { gap: 3px; }
 [data-density='compact'] .tool-card { margin-top: 4px; }
 [data-density='compact'] .composer { padding: 8px 18px; }
+
+/* ── Shortcuts overlay ─────────────────────────────────────────────────── */
+
+.shortcuts-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+}
+.shortcuts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+}
+.shortcuts-row:hover { background: var(--bg-surface2); }
+.shortcuts-desc { font-size: 13px; color: var(--fg); }
+.shortcuts-keys { display: inline-flex; gap: 4px; flex-shrink: 0; }
+.shortcuts-keys kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--fg-dim);
+  background: var(--bg-surface3);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 4px 7px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Toasts ────────────────────────────────────────────────────────────── */
+
+.toast-viewport {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+  animation: slideUp 0.18s ease-out;
+}
+.toast::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--accent);
+}
+.toast-success::before { background: var(--green); }
+.toast-error::before { background: var(--red); }
+.toast-error { border-color: color-mix(in srgb, var(--red) 45%, var(--border-strong)); }
+
+@media (max-width: 768px) {
+  .toast-viewport { left: 12px; right: 12px; bottom: 12px; align-items: stretch; }
+  .toast { max-width: none; }
+}
 
 /* ── Connection banner ─────────────────────────────────────────────────── */
 

@@ -4,6 +4,7 @@ import { matchCommands, SLASH_COMMANDS } from './commands';
 import { GoalPanel, StatusLine, Transcript } from './components';
 import { CommandPalette } from './CommandPalette';
 import { SettingsPanel } from './SettingsPanel';
+import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { applyDensity, applyTheme, loadDensity, loadTheme, saveDensity, saveTheme } from './theme';
 import type { Density, Theme } from './theme';
 import type { SlashCommand } from './commands';
@@ -17,6 +18,7 @@ import {
 } from './projects';
 import type { Project } from './projects';
 import { Sidebar } from './Sidebar';
+import { useToast } from './toast';
 import { useHarnessSession } from './useHarnessSession';
 
 interface SuggestedPrompt {
@@ -33,6 +35,7 @@ const SUGGESTED_PROMPTS: SuggestedPrompt[] = [
 ];
 
 export default function App() {
+  const { toast } = useToast();
   // ── Projects (localStorage) ─────────────────────────────────────────
   const [projects, setProjects] = useState<Project[]>(() => loadProjects());
   // Restore the last active project on reload (if it still exists), so the
@@ -301,6 +304,9 @@ export default function App() {
   // Settings modal.
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Keyboard-shortcuts help overlay.
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
   // Off-canvas sidebar for narrow screens.
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = () => setSidebarOpen(false);
@@ -317,7 +323,16 @@ export default function App() {
         setPaletteOpen(o => !o);
         return;
       }
+      // '?' opens the shortcuts help, but only when not typing in a field.
+      const target = e.target as HTMLElement | null;
+      const typing = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
+      if (e.key === '?' && !typing && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setShortcutsOpen(o => !o);
+        return;
+      }
       if (e.key === 'Escape') {
+        if (shortcutsOpen) { setShortcutsOpen(false); return; }
         if (settingsOpen) { setSettingsOpen(false); return; }
         if (paletteOpen) { setPaletteOpen(false); return; }
         if (sidebarOpen) { setSidebarOpen(false); return; }
@@ -326,7 +341,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [paletteOpen, sidebarOpen, busy, abort, settingsOpen]);
+  }, [paletteOpen, sidebarOpen, busy, abort, settingsOpen, shortcutsOpen]);
 
   // Run a command chosen from the palette. Commands that take arguments pre-fill
   // the composer (so the user can supply them); no-arg commands execute now.
@@ -348,8 +363,8 @@ export default function App() {
         threads={threads}
         activeThreadId={transcript.threadId}
         onSwitchThread={id => { void session.switchThread(id); closeSidebar(); }}
-        onCreateThread={title => { void session.createThread(title); closeSidebar(); }}
-        onDeleteThread={id => { void session.deleteThread(id); }}
+        onCreateThread={title => { void session.createThread(title); toast('New thread created', 'success'); closeSidebar(); }}
+        onDeleteThread={id => { void session.deleteThread(id); toast('Thread deleted'); }}
       />
 
       {/* Dim + dismiss overlay for the off-canvas sidebar on mobile. */}
@@ -514,6 +529,8 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {shortcutsOpen && <ShortcutsOverlay onClose={() => setShortcutsOpen(false)} />}
     </div>
   );
 }
