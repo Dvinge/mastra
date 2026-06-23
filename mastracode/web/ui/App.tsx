@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { matchCommands, SLASH_COMMANDS } from './commands';
 import { GoalPanel, StatusLine, Transcript } from './components';
 import { CommandPalette } from './CommandPalette';
+import { applyTheme, loadTheme, saveTheme } from './theme';
+import type { Theme } from './theme';
 import type { SlashCommand } from './commands';
 import { LogoMark, MenuIcon, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
 import {
@@ -261,11 +263,15 @@ export default function App() {
     else await send(text);
   }
 
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<Theme>(() => loadTheme());
+  // Apply the restored theme on mount (and whenever it changes).
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
   const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
+    saveTheme(next);
   };
 
   // Off-canvas sidebar for narrow screens.

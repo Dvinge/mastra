@@ -743,16 +743,14 @@ body::before {
   opacity: 0.7;
 }
 .diff-text { flex: 1; padding-right: 10px; }
-.diff-line.removed {
-  background: color-mix(in srgb, var(--red) 14%, transparent);
-  color: color-mix(in srgb, var(--red) 80%, var(--fg));
-}
+/* Removed/added lines carry the change signal via a background tint + gutter;
+   syntax-highlight tokens (from highlight.js) provide the text colors. */
+.diff-line.removed { background: color-mix(in srgb, var(--red) 13%, transparent); }
 .diff-line.removed .diff-gutter { color: var(--red); }
-.diff-line.added {
-  background: color-mix(in srgb, var(--green) 14%, transparent);
-  color: color-mix(in srgb, var(--green) 80%, var(--fg));
-}
+.diff-line.added { background: color-mix(in srgb, var(--green) 13%, transparent); }
 .diff-line.added .diff-gutter { color: var(--green); }
+/* Default token color before hljs spans take over. */
+.diff .diff-text { color: var(--fg); }
 
 /* ── Subagent card ──────────────────────────────────────────────────────── */
 

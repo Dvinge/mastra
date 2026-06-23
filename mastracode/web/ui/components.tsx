@@ -2,6 +2,7 @@ import type { PlanResume } from '@mastra/client-js';
 import { useState } from 'react';
 
 import { BellIcon, BrainIcon, ChevronIcon, CopyIcon, FolderIcon, LogoMark, TargetIcon, ToolIcon } from './icons';
+import { highlightCode, languageForPath } from './highlight';
 import { Markdown } from './Markdown';
 
 import type {
@@ -72,25 +73,36 @@ const STATUS_LABEL: Record<ToolCall['status'], string> = {
   error: 'Failed',
 };
 
-/** A unified-diff-style view of an edit's before/after text. */
-function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
+/** A unified-diff-style view of an edit's before/after text, syntax-highlighted. */
+function DiffView({ oldText, newText, path }: { oldText: string; newText: string; path?: string }) {
+  const lang = languageForPath(path);
   const removed = oldText.split('\n');
   const added = newText.split('\n');
   return (
-    <div className="diff" role="group" aria-label="File change">
+    <div className="diff hljs" role="group" aria-label="File change">
       {removed.map((line, i) => (
         <div key={`r${i}`} className="diff-line removed">
           <span className="diff-gutter">-</span>
-          <span className="diff-text">{line || ' '}</span>
+          <span className="diff-text" dangerouslySetInnerHTML={{ __html: highlightCode(line, lang) || '&nbsp;' }} />
         </div>
       ))}
       {added.map((line, i) => (
         <div key={`a${i}`} className="diff-line added">
           <span className="diff-gutter">+</span>
-          <span className="diff-text">{line || ' '}</span>
+          <span className="diff-text" dangerouslySetInnerHTML={{ __html: highlightCode(line, lang) || '&nbsp;' }} />
         </div>
       ))}
     </div>
+  );
+}
+
+/** A syntax-highlighted code block for full-file writes. */
+function CodeBlock({ text, path }: { text: string; path?: string }) {
+  const lang = languageForPath(path);
+  return (
+    <pre className="result-block hljs">
+      <code dangerouslySetInnerHTML={{ __html: highlightCode(text, lang) }} />
+    </pre>
   );
 }
 
@@ -137,9 +149,9 @@ function ToolCard({ tool }: { tool: ToolCall }) {
                 <CopyButton text={edit.content ?? edit.new_string ?? ''} />
               </div>
               {edit.new_string !== undefined ? (
-                <DiffView oldText={edit.old_string ?? ''} newText={edit.new_string} />
+                <DiffView oldText={edit.old_string ?? ''} newText={edit.new_string} path={edit.path} />
               ) : (
-                <pre className="result-block">{truncate(edit.content ?? '', 2000)}</pre>
+                <CodeBlock text={truncate(edit.content ?? '', 2000)} path={edit.path} />
               )}
             </div>
           ) : argsPretty ? (
