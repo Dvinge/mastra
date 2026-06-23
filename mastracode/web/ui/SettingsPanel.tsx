@@ -1,15 +1,29 @@
+import type { HarnessAvailableModel } from '@mastra/client-js';
+
 import type { Density, Theme } from './theme';
 
 interface SettingsPanelProps {
   theme: Theme;
   density: Density;
+  models: HarnessAvailableModel[];
+  currentModelId: string | null;
   onThemeChange: (theme: Theme) => void;
   onDensityChange: (density: Density) => void;
+  onModelChange: (modelId: string) => void;
   onClose: () => void;
 }
 
 /** A small preferences modal for appearance settings. */
-export function SettingsPanel({ theme, density, onThemeChange, onDensityChange, onClose }: SettingsPanelProps) {
+export function SettingsPanel({
+  theme,
+  density,
+  models,
+  currentModelId,
+  onThemeChange,
+  onDensityChange,
+  onModelChange,
+  onClose,
+}: SettingsPanelProps) {
   return (
     <div className="palette-overlay" onClick={onClose}>
       <div
@@ -23,6 +37,31 @@ export function SettingsPanel({ theme, density, onThemeChange, onDensityChange, 
           <h2 className="settings-title">Settings</h2>
           <button className="settings-close" onClick={onClose} aria-label="Close settings">×</button>
         </div>
+
+        {models.length > 0 && (
+          <div className="settings-row">
+            <div className="settings-label">
+              <span>Model</span>
+              <span className="settings-hint">Default model for this session</span>
+            </div>
+            <select
+              className="settings-select"
+              aria-label="Model"
+              value={currentModelId ?? ''}
+              onChange={e => onModelChange(e.target.value)}
+            >
+              {currentModelId && !models.some(m => m.id === currentModelId) && (
+                <option value={currentModelId}>{currentModelId}</option>
+              )}
+              {models.map(m => (
+                <option key={m.id} value={m.id} disabled={!m.hasApiKey}>
+                  {m.modelName}
+                  {m.hasApiKey ? '' : ' (no API key)'}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="settings-row">
           <div className="settings-label">

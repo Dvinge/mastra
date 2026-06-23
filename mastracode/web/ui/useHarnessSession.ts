@@ -1,5 +1,5 @@
 import { MastraClient } from '@mastra/client-js';
-import type { HarnessModeInfo, HarnessThreadInfo, PlanResume, PermissionRules, PermissionPolicy, ToolCategory } from '@mastra/client-js';
+import type { HarnessAvailableModel, HarnessModeInfo, HarnessThreadInfo, PlanResume, PermissionRules, PermissionPolicy, ToolCategory } from '@mastra/client-js';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { initialTranscript, transcriptReducer } from './transcript';
@@ -32,6 +32,7 @@ export interface HarnessSessionApi {
   transcript: TranscriptState;
   status: ConnectionStatus;
   modes: HarnessModeInfo[];
+  models: HarnessAvailableModel[];
   threads: HarnessThreadInfo[];
   send: (text: string) => Promise<void>;
   steer: (text: string) => Promise<void>;
@@ -72,6 +73,8 @@ export function useHarnessSession({ harnessId, resourceId, baseUrl = '', enabled
   const [threads, setThreads] = useState<HarnessThreadInfo[]>([]);
 
   const sessionRef = useRef<Session | null>(null);
+  const harnessRef = useRef<ReturnType<MastraClient['getHarness']> | null>(null);
+  const [models, setModels] = useState<HarnessAvailableModel[]>([]);
 
   const refreshThreads = useCallback(async () => {
     const session = sessionRef.current;
@@ -152,11 +155,26 @@ export function useHarnessSession({ harnessId, resourceId, baseUrl = '', enabled
       const harness = client.getHarness(harnessId);
       const session = harness.session(resourceId);
       sessionRef.current = session;
+      harnessRef.current = harness;
 
       try {
         const [created, harnessModes] = await Promise.all([session.create(), harness.listModes()]);
         if (disposed) return;
         setModes(harnessModes);
+
+        // Load available models for the settings picker (non-fatal if it fails).
+        // The catalog can be huge (thousands of entries), so keep only models
+        // that have an API key configured — the ones the user can actually use.
+        harness
+          .listModels()
+          .then(list => {
+            if (disposed) return;
+            // Only offer models with an API key configured. If none are set up,
+            // leave the list empty (the picker hides) rather than dumping the
+            // entire catalog into a select.
+            setModels(list.filter(m => m.hasApiKey));
+          })
+          .catch(() => {});
 
         const state = await session.state();
         // Resuming a thread that already has history: load and render it so the
@@ -312,6 +330,7 @@ export function useHarnessSession({ harnessId, resourceId, baseUrl = '', enabled
     transcript,
     status,
     modes,
+    models,
     threads,
     send,
     steer,

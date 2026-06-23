@@ -1653,6 +1653,20 @@ body::before {
 .seg-btn.active { background: var(--bg-surface); color: var(--fg); box-shadow: var(--shadow-sm); }
 .seg-btn:hover:not(.active) { color: var(--fg); }
 
+.settings-select {
+  flex-shrink: 0;
+  max-width: 220px;
+  background: var(--bg-surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.settings-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 /* Compact density: tighten the conversation rhythm and chrome. */
 [data-density='compact'] .transcript { gap: 10px; padding-top: 14px; }
 [data-density='compact'] .bubble-user { padding: 7px 11px; }

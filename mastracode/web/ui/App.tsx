@@ -119,10 +119,21 @@ export default function App() {
     }
   };
 
-  // Auto-scroll the transcript.
+  // Length of the most recent assistant entry's text — changes on every
+  // streamed chunk, so the autoscroll effect can follow the stream smoothly
+  // (not just when a whole new entry is appended).
+  const lastTranscriptEntry = transcript.entries[transcript.entries.length - 1];
+  const streamingLen = lastTranscriptEntry?.kind === 'assistant' ? lastTranscriptEntry.text.length : 0;
+
+  // Auto-scroll the transcript to follow new content. Only auto-follows when
+  // the user is already near the bottom, so scrolling back to read history
+  // isn't yanked away mid-stream.
   useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
-  }, [transcript.entries.length, transcript.running, transcript.pending]);
+    const el = threadRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+    if (nearBottom) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [transcript.entries.length, transcript.running, transcript.pending, streamingLen]);
 
   // Auto-grow the composer textarea with its content (capped via CSS max-height).
   useEffect(() => {
@@ -524,8 +535,11 @@ export default function App() {
         <SettingsPanel
           theme={theme}
           density={density}
+          models={session.models}
+          currentModelId={transcript.modelId ?? null}
           onThemeChange={changeTheme}
           onDensityChange={changeDensity}
+          onModelChange={modelId => { void session.switchModel(modelId); toast('Model updated', 'success'); }}
           onClose={() => setSettingsOpen(false)}
         />
       )}
