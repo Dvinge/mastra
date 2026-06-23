@@ -131,16 +131,25 @@ function ApprovalCard({
   onApprove: (toolCallId: string, approved: boolean, promptId: string) => void;
 }) {
   return (
-    <div className="prompt-card approval">
+    <div className="prompt-card approval" role="group" aria-label={`Tool approval for ${prompt.toolName}`}>
       <div className="prompt-title">
         Approve <code>{prompt.toolName}</code>?
       </div>
       <pre className="result-block">{truncate(stringify(prompt.args), 400)}</pre>
       <div className="prompt-actions">
-        <button className="btn btn-primary btn-sm" onClick={() => onApprove(prompt.toolCallId, true, prompt.id)}>
+        <button
+          className="btn btn-primary btn-sm"
+          aria-label={`Approve ${prompt.toolName}`}
+          autoFocus
+          onClick={() => onApprove(prompt.toolCallId, true, prompt.id)}
+        >
           Approve
         </button>
-        <button className="btn btn-danger btn-sm" onClick={() => onApprove(prompt.toolCallId, false, prompt.id)}>
+        <button
+          className="btn btn-danger btn-sm"
+          aria-label={`Decline ${prompt.toolName}`}
+          onClick={() => onApprove(prompt.toolCallId, false, prompt.id)}
+        >
           Decline
         </button>
       </div>
@@ -172,14 +181,23 @@ function SuspensionCard({
 
   if (prompt.toolName === 'submit_plan') {
     return (
-      <div className="prompt-card suspension">
+      <div className="prompt-card suspension" role="group" aria-label="Plan approval">
         <div className="prompt-title">Plan: {payload.plan?.title ?? payload.title ?? 'Proposed plan'}</div>
         {payload.plan?.summary && <div className="text">{payload.plan.summary}</div>}
         <div className="prompt-actions">
-          <button className="btn btn-primary btn-sm" onClick={() => onRespond(prompt.toolCallId, { action: 'approved' }, prompt.id)}>
+          <button
+            className="btn btn-primary btn-sm"
+            aria-label="Approve the plan and switch to build"
+            autoFocus
+            onClick={() => onRespond(prompt.toolCallId, { action: 'approved' }, prompt.id)}
+          >
             Approve &amp; build
           </button>
-          <button className="btn btn-danger btn-sm" onClick={() => onRespond(prompt.toolCallId, { action: 'rejected' }, prompt.id)}>
+          <button
+            className="btn btn-danger btn-sm"
+            aria-label="Reject the plan"
+            onClick={() => onRespond(prompt.toolCallId, { action: 'rejected' }, prompt.id)}
+          >
             Reject
           </button>
         </div>
@@ -189,14 +207,23 @@ function SuspensionCard({
 
   if (prompt.toolName === 'request_access') {
     return (
-      <div className="prompt-card suspension">
+      <div className="prompt-card suspension" role="group" aria-label="Access request">
         <div className="prompt-title">Grant access to {payload.requestedPath ?? 'a path'}?</div>
-        {payload.reason && <div style={{ color: 'var(--fg-dim)', fontSize: 12 }}>Reason: {payload.reason}</div>}
+        {payload.reason && <div className="prompt-reason">Reason: {payload.reason}</div>}
         <div className="prompt-actions">
-          <button className="btn btn-primary btn-sm" onClick={() => onRespond(prompt.toolCallId, 'Yes', prompt.id)}>
+          <button
+            className="btn btn-primary btn-sm"
+            aria-label={`Allow access to ${payload.requestedPath ?? 'the requested path'}`}
+            autoFocus
+            onClick={() => onRespond(prompt.toolCallId, 'Yes', prompt.id)}
+          >
             Allow
           </button>
-          <button className="btn btn-danger btn-sm" onClick={() => onRespond(prompt.toolCallId, 'No', prompt.id)}>
+          <button
+            className="btn btn-danger btn-sm"
+            aria-label={`Deny access to ${payload.requestedPath ?? 'the requested path'}`}
+            onClick={() => onRespond(prompt.toolCallId, 'No', prompt.id)}
+          >
             Deny
           </button>
         </div>
@@ -218,27 +245,40 @@ function AskUserCard({
 }) {
   const [draft, setDraft] = useState('');
   const options = payload.options ?? [];
+  const question = payload.question ?? 'The agent has a question';
   return (
-    <div className="prompt-card suspension">
-      <div className="prompt-title">{payload.question ?? 'The agent has a question'}</div>
+    <div className="prompt-card suspension" role="group" aria-label="Question from the agent">
+      <div className="prompt-title">{question}</div>
       {options.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+        <div className="prompt-options" role="group" aria-label="Answer options">
           {options.map(opt => (
-            <button key={opt.label} className="prompt-option" onClick={() => onRespond(prompt.toolCallId, opt.label, prompt.id)}>
+            <button
+              key={opt.label}
+              className="prompt-option"
+              aria-label={opt.description ? `${opt.label}: ${opt.description}` : opt.label}
+              onClick={() => onRespond(prompt.toolCallId, opt.label, prompt.id)}
+            >
               <strong>{opt.label}</strong>
-              {opt.description && <span style={{ color: 'var(--fg-dim)' }}> — {opt.description}</span>}
+              {opt.description && <span className="prompt-option-desc"> — {opt.description}</span>}
             </button>
           ))}
         </div>
       ) : (
         <form
-          style={{ display: 'flex', gap: 8, marginTop: 6 }}
+          className="prompt-answer-form"
           onSubmit={e => {
             e.preventDefault();
             if (draft.trim()) onRespond(prompt.toolCallId, draft.trim(), prompt.id);
           }}
         >
-          <input className="input" value={draft} onChange={e => setDraft(e.target.value)} placeholder="Your answer…" autoFocus />
+          <input
+            className="input"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            placeholder="Your answer…"
+            aria-label={question}
+            autoFocus
+          />
           <button className="btn btn-primary btn-sm" type="submit">Reply</button>
         </form>
       )}

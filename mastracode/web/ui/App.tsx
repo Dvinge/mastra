@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { matchCommands, SLASH_COMMANDS } from './commands';
 import { GoalPanel, StatusLine, Transcript } from './components';
+import { CommandPalette } from './CommandPalette';
+import type { SlashCommand } from './commands';
 import { LogoMark, MenuIcon, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
 import {
   loadProjects,
@@ -270,6 +272,38 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = () => setSidebarOpen(false);
 
+  // Command palette (Cmd/Ctrl+K).
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Global keyboard shortcuts: Cmd/Ctrl+K toggles the palette; Escape closes
+  // the palette/sidebar or aborts an in-flight run.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen(o => !o);
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (paletteOpen) { setPaletteOpen(false); return; }
+        if (sidebarOpen) { setSidebarOpen(false); return; }
+        if (busy) { void abort(); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [paletteOpen, sidebarOpen, busy, abort]);
+
+  // Run a command chosen from the palette. Commands that take arguments pre-fill
+  // the composer (so the user can supply them); no-arg commands execute now.
+  const runPaletteCommand = (command: SlashCommand) => {
+    if (command.args) {
+      applyCommand(command.name);
+    } else {
+      void handleInput(`/${command.name}`);
+    }
+  };
+
   return (
     <div className={`app-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <Sidebar
@@ -328,6 +362,15 @@ export default function App() {
             onResumeGoal={() => void session.resumeGoal()}
             onClearGoal={() => void session.clearGoal()}
           />
+        )}
+
+        {(status === 'reconnecting' || status === 'error') && (
+          <div className={`conn-banner ${status}`} role="status" aria-live="polite">
+            <span className="conn-dot" />
+            {status === 'reconnecting'
+              ? 'Connection lost — reconnecting…'
+              : 'Disconnected. Check the server and reload to reconnect.'}
+          </div>
         )}
 
         <div className="transcript" ref={threadRef}>
@@ -402,6 +445,10 @@ export default function App() {
         </>
         )}
       </div>
+
+      {paletteOpen && activeProject && (
+        <CommandPalette onRun={runPaletteCommand} onClose={() => setPaletteOpen(false)} />
+      )}
     </div>
   );
 }
