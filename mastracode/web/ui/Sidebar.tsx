@@ -2,6 +2,7 @@ import type { HarnessThreadInfo } from '@mastra/client-js';
 import { useState } from 'react';
 
 import { DirectoryPicker } from './DirectoryPicker';
+import { CloseIcon, LogoMark, PlusIcon } from './icons';
 import type { Project } from './projects';
 import { addProject, loadProjects, removeProject } from './projects';
 
@@ -75,13 +76,21 @@ export function Sidebar({
 
   return (
     <div className="sidebar">
+      {/* ── Brand ─────────────────────────────────────────────────────── */}
+      <div className="sidebar-brand">
+        <LogoMark size={22} className="logo-mark" />
+        <span className="sidebar-brand-name">MastraCode</span>
+      </div>
+
       {/* ── Projects ──────────────────────────────────────────────────── */}
       <div className="sidebar-section">
         <div className="sidebar-section-header">
-          <span className="sidebar-section-title">Projects</span>
+          <span className="sidebar-section-title">
+            Projects {projects.length > 0 && <span className="sidebar-count">{projects.length}</span>}
+          </span>
           <div className="sidebar-section-actions">
-            <button className="sidebar-icon-btn" title="Add project" onClick={() => setShowPicker(true)}>
-              +
+            <button className="sidebar-icon-btn" title="Add project" aria-label="Add project" onClick={() => setShowPicker(true)}>
+              <PlusIcon size={15} />
             </button>
           </div>
         </div>
@@ -96,7 +105,7 @@ export function Sidebar({
             >
               <span className="sidebar-project-name">{p.name}</span>
               <span className="sidebar-project-path">{p.path}</span>
-              <span className="sidebar-project-remove" onClick={e => handleRemoveProject(e, p.id)} title="Remove">×</span>
+              <span className="sidebar-project-remove" onClick={e => handleRemoveProject(e, p.id)} title="Remove"><CloseIcon size={13} /></span>
             </button>
           ))}
 
@@ -119,13 +128,16 @@ export function Sidebar({
       {activeProject && (
       <div className="sidebar-section sidebar-section-grow">
         <div className="sidebar-section-header">
-          <span className="sidebar-section-title">{activeProject.name} threads</span>
+          <span className="sidebar-section-title">
+            Threads {threads.length > 0 && <span className="sidebar-count">{threads.length}</span>}
+          </span>
           <button
             className="sidebar-icon-btn"
             title="New thread"
+            aria-label="New thread"
             onClick={() => onCreateThread()}
           >
-            +
+            <PlusIcon size={15} />
           </button>
         </div>
 
@@ -148,7 +160,7 @@ export function Sidebar({
                 onClick={e => { e.stopPropagation(); onDeleteThread(t.id); }}
                 title="Delete"
               >
-                ×
+                <CloseIcon size={13} />
               </span>
             </button>
           ))}

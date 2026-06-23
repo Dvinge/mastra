@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { matchCommands, SLASH_COMMANDS } from './commands';
 import { GoalPanel, StatusLine, Transcript } from './components';
-import { LogoMark, MoonIcon, SunIcon } from './icons';
+import { LogoMark, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
 import {
   loadProjects,
   DEFAULT_RESOURCE_ID,
@@ -40,7 +40,7 @@ export default function App() {
   const { transcript, status, modes, threads, send, steer, abort } = session;
   const [draft, setDraft] = useState('');
   const threadRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // ── Slash-command autocomplete ──────────────────────────────────────
   const suggestions = useMemo(() => matchCommands(draft), [draft]);
@@ -58,28 +58,43 @@ export default function App() {
     inputRef.current?.focus();
   };
 
-  const onComposerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showSuggestions) return;
-    if (e.key === 'ArrowDown') {
+  const onComposerKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showSuggestions) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveSuggestion(i => (i + 1) % suggestions.length);
+        return;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActiveSuggestion(i => (i - 1 + suggestions.length) % suggestions.length);
+        return;
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        applyCommand(suggestions[activeSuggestion]!.name);
+        return;
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        // If the draft already names a complete command exactly, let Enter submit
+        // it (runs no-arg commands like /yolo). Otherwise complete the highlighted
+        // suggestion so the user can type its args.
+        const exact = draft.slice(1) === suggestions[activeSuggestion]!.name && suggestions.length === 1;
+        if (exact) {
+          e.preventDefault();
+          onSubmit(e);
+          return;
+        }
+        e.preventDefault();
+        applyCommand(suggestions[activeSuggestion]!.name);
+        return;
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setDraft('');
+        return;
+      }
+    }
+    // Enter sends; Shift+Enter inserts a newline.
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      setActiveSuggestion(i => (i + 1) % suggestions.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveSuggestion(i => (i - 1 + suggestions.length) % suggestions.length);
-    } else if (e.key === 'Tab') {
-      e.preventDefault();
-      applyCommand(suggestions[activeSuggestion]!.name);
-    } else if (e.key === 'Enter') {
-      // If the draft already names a complete command exactly, let Enter submit
-      // it (runs no-arg commands like /yolo). Otherwise complete the highlighted
-      // suggestion so the user can type its args.
-      const exact = draft.slice(1) === suggestions[activeSuggestion]!.name && suggestions.length === 1;
-      if (exact) return; // fall through to the form's onSubmit
-      e.preventDefault();
-      applyCommand(suggestions[activeSuggestion]!.name);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setDraft('');
+      onSubmit(e);
     }
   };
 
@@ -87,6 +102,21 @@ export default function App() {
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [transcript.entries.length, transcript.running]);
+
+  // Auto-grow the composer textarea with its content (capped via CSS max-height).
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [draft]);
+
+  // Show a "thinking" indicator while the agent is running but hasn't streamed
+  // any assistant text yet (i.e. before the first token of the latest reply).
+  const lastEntry = transcript.entries[transcript.entries.length - 1];
+  const showWorkingIndicator =
+    transcript.running &&
+    !(lastEntry?.kind === 'assistant' && lastEntry.streaming && lastEntry.text.length > 0);
 
   // A restored active project from a pre-resourceId build won't have one yet;
   // backfill it so the session can connect. Runs once per project that needs it.
@@ -140,7 +170,7 @@ export default function App() {
     }
   }, [status, activeProject, session]);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
@@ -296,6 +326,12 @@ export default function App() {
             onApprove={(toolCallId, approved, id) => void session.approveTool(toolCallId, approved, id)}
             onRespond={(toolCallId, data, id) => void session.respondSuspension(toolCallId, data, id)}
           />
+          {showWorkingIndicator && (
+            <div className="working-indicator" aria-live="polite" aria-label="Agent is working">
+              <span className="working-dots"><span /><span /><span /></span>
+              <span className="working-label">Thinking…</span>
+            </div>
+          )}
         </div>
 
         <form className="composer" onSubmit={onSubmit}>
@@ -316,19 +352,24 @@ export default function App() {
               ))}
             </div>
           )}
-          <input
+          <textarea
             ref={inputRef}
             className="input composer-input"
             value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={onComposerKeyDown}
-            placeholder="Message the agent, or /mode plan..."
+            placeholder="Message the agent · / for commands · Shift+Enter for newline"
+            rows={1}
             disabled={status === 'error'}
           />
           {transcript.running ? (
-            <button type="button" className="btn btn-danger" onClick={() => void abort()}>Stop</button>
+            <button type="button" className="btn btn-danger btn-icon" onClick={() => void abort()} title="Stop" aria-label="Stop">
+              <StopIcon />
+            </button>
           ) : (
-            <button type="submit" className="btn btn-primary" disabled={status !== 'ready' || !draft.trim()}>Send</button>
+            <button type="submit" className="btn btn-primary btn-icon" disabled={status !== 'ready' || !draft.trim()} title="Send" aria-label="Send">
+              <SendIcon />
+            </button>
           )}
         </form>
 
