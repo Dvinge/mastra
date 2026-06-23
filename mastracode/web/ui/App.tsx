@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { matchCommands, SLASH_COMMANDS } from './commands';
 import { GoalPanel, StatusLine, Transcript } from './components';
+import { LogoMark, MoonIcon, SunIcon } from './icons';
 import {
   loadProjects,
   DEFAULT_RESOURCE_ID,
@@ -247,7 +248,8 @@ export default function App() {
       <div className="app-main">
         <header className="header">
           <span className="header-title">
-            {activeProject ? activeProject.name : 'MastraCode'}
+            <LogoMark size={24} className="logo-mark" />
+            <span className="header-name">{activeProject ? activeProject.name : 'MastraCode'}</span>
           </span>
           <div className="header-actions">
             {activeProject && modes.map(m => (
@@ -259,17 +261,17 @@ export default function App() {
                 {m.name ?? m.id}
               </button>
             ))}
-            <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
-              {theme === 'dark' ? '☀️' : '🌙'}
+            <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </button>
           </div>
         </header>
 
         {!activeProject ? (
           <div className="no-project">
-            <div className="no-project-icon">📁</div>
-            <h2>No project selected</h2>
-            <p>Add a project in the sidebar to start a coding session. Threads live inside a project.</p>
+            <div className="no-project-icon"><LogoMark size={40} /></div>
+            <h2>Welcome to MastraCode</h2>
+            <p>Add a project from the sidebar to start a coding session. Each project keeps its own threads, memory, and workspace — shared with the terminal.</p>
           </div>
         ) : (
         <>

@@ -1,6 +1,7 @@
 import type { PlanResume } from '@mastra/client-js';
 import { useState } from 'react';
 
+import { BellIcon, BrainIcon, ChevronIcon, CopyIcon, FolderIcon, TargetIcon, ToolIcon } from './icons';
 import { Markdown } from './Markdown';
 
 import type {
@@ -41,6 +42,26 @@ function lastSegment(id: string): string {
   return parts[parts.length - 1] ?? id;
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="copy-btn"
+      title="Copy"
+      aria-label="Copy"
+      onClick={e => {
+        e.stopPropagation();
+        void navigator.clipboard?.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      }}
+    >
+      {copied ? <span className="copy-ok">Copied</span> : <CopyIcon />}
+    </button>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Tool card (collapsible)
 // ---------------------------------------------------------------------------
@@ -48,31 +69,42 @@ function lastSegment(id: string): string {
 function ToolCard({ tool }: { tool: ToolCall }) {
   const [expanded, setExpanded] = useState(false);
   const argsPreview = tool.args !== undefined ? JSON.stringify(tool.args) : tool.argsText;
+  const resultText = tool.status !== 'running' && tool.result !== undefined ? stringify(tool.result) : undefined;
 
   return (
-    <div className="tool-card">
-      <div className="tool-head" onClick={() => setExpanded(!expanded)}>
-        <span className={`tool-status ${tool.status}`} />
+    <div className={`tool-card ${tool.status}`}>
+      <button type="button" className="tool-head" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>
+        <span className="tool-icon"><ToolIcon name={tool.toolName} /></span>
         <span className="tool-name">{tool.toolName}</span>
-        {argsPreview && !expanded && (
-          <span className="tool-args-preview">{truncate(argsPreview, 80)}</span>
-        )}
-        <span style={{ marginLeft: 'auto', color: 'var(--fg-muted)', fontSize: 10 }}>
-          {expanded ? '▲' : '▼'}
-        </span>
-      </div>
+        {argsPreview && !expanded && <span className="tool-args-preview">{truncate(argsPreview, 72)}</span>}
+        <span className={`tool-status ${tool.status}`} title={tool.status} />
+        <ChevronIcon size={13} className={`tool-chevron ${expanded ? 'open' : ''}`} />
+      </button>
       {expanded && (
         <div className="tool-body">
-          {argsPreview && <pre className="result-block">{argsPreview}</pre>}
-          {tool.output && <pre className="shell-output">{tool.output}</pre>}
-          {tool.status !== 'running' && tool.result !== undefined && (
-            <pre className="result-block">{truncate(stringify(tool.result), 600)}</pre>
+          {argsPreview && (
+            <div className="tool-section">
+              <div className="tool-section-head"><span>Arguments</span><CopyButton text={argsPreview} /></div>
+              <pre className="result-block">{argsPreview}</pre>
+            </div>
+          )}
+          {tool.output && (
+            <div className="tool-section">
+              <div className="tool-section-head"><span>Output</span><CopyButton text={tool.output} /></div>
+              <pre className="shell-output">{tool.output}</pre>
+            </div>
+          )}
+          {resultText !== undefined && (
+            <div className="tool-section">
+              <div className="tool-section-head"><span>Result</span><CopyButton text={resultText} /></div>
+              <pre className="result-block">{truncate(resultText, 800)}</pre>
+            </div>
           )}
         </div>
       )}
       {!expanded && tool.output && (
         <div className="tool-body">
-          <pre className="shell-output">{truncate(tool.output, 200)}</pre>
+          <pre className="shell-output collapsed-output">{truncate(tool.output, 180)}</pre>
         </div>
       )}
     </div>
@@ -230,12 +262,12 @@ function SubagentCard({ entry }: { entry: SubagentEntry }) {
 function NotificationCard({ entry }: { entry: NotificationEntry }) {
   return (
     <div className="notif-card">
-      <div className="tool-head">
-        <span>🔔</span>
+      <div className="notif-head">
+        <span className="notif-icon"><BellIcon size={13} /></span>
         <span className="tool-name">{entry.source ?? 'notification'}</span>
-        {entry.priority && <span style={{ color: 'var(--fg-dim)', fontSize: 11 }}>[{entry.priority}]</span>}
+        {entry.priority && <span className={`notif-priority prio-${entry.priority}`}>{entry.priority}</span>}
       </div>
-      <div className="text" style={{ padding: '4px 0' }}>{entry.message}</div>
+      <div className="notif-message">{entry.message}</div>
     </div>
   );
 }
@@ -243,12 +275,12 @@ function NotificationCard({ entry }: { entry: NotificationEntry }) {
 function NotificationSummaryCard({ entry }: { entry: NotificationSummaryEntry }) {
   return (
     <div className="notif-card">
-      <div className="tool-head">
-        <span>📬</span>
+      <div className="notif-head">
+        <span className="notif-icon"><BellIcon size={13} /></span>
         <span className="tool-name">Notification summary</span>
-        <span style={{ color: 'var(--fg-dim)', fontSize: 11 }}>{entry.pending} pending</span>
+        <span className="notif-count">{entry.pending} pending</span>
       </div>
-      <div className="text" style={{ padding: '4px 0' }}>{entry.message}</div>
+      <div className="notif-message">{entry.message}</div>
     </div>
   );
 }
@@ -352,18 +384,24 @@ export function StatusLine({
 }) {
   return (
     <div className="status-line">
-      <span className="badge">{modeId ?? '—'}</span>
-      <span>{modelId ? lastSegment(modelId) : 'no model'}</span>
-      {projectName && <span className="badge">📁 {projectName}</span>}
-      {!projectName && workspaceReady !== undefined && (
-        <span>{workspaceReady ? '📁' : '⚠️ no workspace'}</span>
+      <span className="badge badge-mode">{modeId ?? '—'}</span>
+      <span className="status-model">{modelId ? lastSegment(modelId) : 'no model'}</span>
+      {projectName && (
+        <span className="status-item"><FolderIcon size={13} /> {projectName}</span>
       )}
-      {omPhase && omPhase !== 'idle' && <span>🧠 {omPhase}</span>}
-      {(followUpCount ?? 0) > 0 && <span>📋 {followUpCount} queued</span>}
-      {usage?.totalTokens != null && <span>{(usage.totalTokens / 1000).toFixed(1)}k tokens</span>}
+      {!projectName && workspaceReady !== undefined && (
+        <span className="status-item"><FolderIcon size={13} /> {workspaceReady ? 'workspace' : 'no workspace'}</span>
+      )}
+      {omPhase && omPhase !== 'idle' && (
+        <span className="status-item"><BrainIcon size={13} /> {omPhase}</span>
+      )}
+      {(followUpCount ?? 0) > 0 && <span className="status-item">{followUpCount} queued</span>}
+      {usage?.totalTokens != null && (
+        <span className="status-item">{(usage.totalTokens / 1000).toFixed(1)}k tokens</span>
+      )}
       <span style={{ flex: 1 }} />
       <span className={`connection-dot ${status}`} />
-      <span>{running ? 'working…' : status === 'reconnecting' ? 'reconnecting…' : status}</span>
+      <span className="status-state">{running ? 'working…' : status === 'reconnecting' ? 'reconnecting…' : status}</span>
     </div>
   );
 }
@@ -411,16 +449,13 @@ export function GoalPanel({
     );
   }
 
-  const statusIcon = goal.status === 'active' ? '🎯' : goal.status === 'paused' ? '⏸️' : '✅';
   const progress = `${goal.iteration}/${goal.maxRuns}`;
 
   return (
-    <div className="goal-bar">
-      <span>{statusIcon}</span>
-      <span style={{ flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {goal.objective}
-      </span>
-      <span style={{ color: 'var(--fg-dim)' }}>{progress}</span>
+    <div className={`goal-bar goal-${goal.status}`}>
+      <span className="goal-icon"><TargetIcon size={15} /></span>
+      <span className="goal-objective">{goal.objective}</span>
+      <span className="goal-progress">{progress}</span>
       {goal.reason && (
         <span style={{ color: 'var(--fg-dim)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {goal.reason}
