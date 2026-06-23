@@ -130,8 +130,16 @@ export interface GoalSnapshot {
 
 export interface TranscriptState {
   entries: TimelineEntry[];
-  /** Whether the agent is mid-run. */
+  /** Whether the agent is mid-run (driven by agent_start/agent_end events). */
   running: boolean;
+  /**
+   * Whether a turn the user just initiated is awaiting its first response.
+   * Set the instant the user sends/steers (synchronously, before any SSE
+   * events), and cleared once the agent finishes or streams its first token.
+   * This makes the "thinking" indicator and Stop button latch reliably even
+   * when the run's start/end events arrive in a single batched flush.
+   */
+  pending: boolean;
   modeId?: string;
   modelId?: string;
   threadId?: string;
@@ -152,6 +160,7 @@ export interface TranscriptState {
 export const initialTranscript: TranscriptState = {
   entries: [],
   running: false,
+  pending: false,
   tasks: [],
   followUpCount: 0,
   omPhase: 'idle',
@@ -176,6 +185,7 @@ export function transcriptReducer(state: TranscriptState, action: Action): Trans
     case 'localUser':
       return {
         ...state,
+        pending: true,
         entries: [...state.entries, { kind: 'user', id: `local-${Date.now()}-${noticeSeq++}`, text: action.text, steer: action.steer }],
       };
     case 'localNotice':
@@ -195,13 +205,16 @@ function applyEvent(state: TranscriptState, raw: HarnessEvent): TranscriptState 
     case 'agent_start':
       return { ...state, running: true };
     case 'agent_end':
-      return { ...state, running: false };
+      return { ...state, running: false, pending: false };
 
     case 'message_start':
-    case 'message_update':
-      return upsertAssistant(state, event.message, true);
+    case 'message_update': {
+      const next = upsertAssistant(state, event.message, true);
+      // First streamed assistant content clears the "thinking" pending state.
+      return hasAssistantText(next) ? { ...next, pending: false } : next;
+    }
     case 'message_end':
-      return upsertAssistant(state, event.message, false);
+      return { ...upsertAssistant(state, event.message, false), pending: false };
 
     case 'tool_input_start':
       return withTool(state, event.toolCallId, t => ({ ...t, toolName: event.toolName }), {
@@ -437,6 +450,14 @@ function upsertAssistant(state: TranscriptState, message: HarnessMessage, stream
     entries[idx] = { ...(entries[idx] as AssistantEntry), text, streaming };
   }
   return { ...state, entries };
+}
+
+/** True when the most recent assistant entry has any visible text. */
+function hasAssistantText(state: TranscriptState): boolean {
+  const idx = latestAssistantIndex(state.entries);
+  if (idx === -1) return false;
+  const entry = state.entries[idx];
+  return entry.kind === 'assistant' && entry.text.trim().length > 0;
 }
 
 /** Find the latest assistant entry, creating one if none exists. */

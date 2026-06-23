@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { matchCommands, SLASH_COMMANDS } from './commands';
 import { GoalPanel, StatusLine, Transcript } from './components';
-import { LogoMark, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
+import { LogoMark, MenuIcon, MoonIcon, SendIcon, StopIcon, SunIcon } from './icons';
 import {
   loadProjects,
   DEFAULT_RESOURCE_ID,
@@ -101,7 +101,7 @@ export default function App() {
   // Auto-scroll the transcript.
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
-  }, [transcript.entries.length, transcript.running]);
+  }, [transcript.entries.length, transcript.running, transcript.pending]);
 
   // Auto-grow the composer textarea with its content (capped via CSS max-height).
   useEffect(() => {
@@ -111,12 +111,17 @@ export default function App() {
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   }, [draft]);
 
-  // Show a "thinking" indicator while the agent is running but hasn't streamed
-  // any assistant text yet (i.e. before the first token of the latest reply).
+  // The agent is "busy" while a run is active OR a just-sent turn is awaiting
+  // its first response. `pending` latches synchronously on send/steer, so the
+  // Stop button and thinking indicator stay reliable even when the run's
+  // start/end events arrive batched together.
+  const busy = transcript.running || transcript.pending;
+
+  // Show the "thinking" indicator while busy but before any assistant text has
+  // streamed for the current turn.
   const lastEntry = transcript.entries[transcript.entries.length - 1];
   const showWorkingIndicator =
-    transcript.running &&
-    !(lastEntry?.kind === 'assistant' && lastEntry.streaming && lastEntry.text.length > 0);
+    busy && !(lastEntry?.kind === 'assistant' && lastEntry.streaming && lastEntry.text.length > 0);
 
   // A restored active project from a pre-resourceId build won't have one yet;
   // backfill it so the session can connect. Runs once per project that needs it.
@@ -250,7 +255,7 @@ export default function App() {
           return;
       }
     }
-    if (transcript.running) await steer(text);
+    if (busy) await steer(text);
     else await send(text);
   }
 
@@ -261,22 +266,32 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', next);
   };
 
+  // Off-canvas sidebar for narrow screens.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <Sidebar
         projects={projects}
         activeProjectId={activeProjectId}
-        onSelectProject={p => void handleSelectProject(p)}
+        onSelectProject={p => { void handleSelectProject(p); closeSidebar(); }}
         onProjectsChange={setProjects}
         threads={threads}
         activeThreadId={transcript.threadId}
-        onSwitchThread={id => { void session.switchThread(id); }}
-        onCreateThread={title => { void session.createThread(title); }}
+        onSwitchThread={id => { void session.switchThread(id); closeSidebar(); }}
+        onCreateThread={title => { void session.createThread(title); closeSidebar(); }}
         onDeleteThread={id => { void session.deleteThread(id); }}
       />
 
+      {/* Dim + dismiss overlay for the off-canvas sidebar on mobile. */}
+      <div className="sidebar-overlay" onClick={closeSidebar} aria-hidden="true" />
+
       <div className="app-main">
         <header className="header">
+          <button className="menu-btn" onClick={() => setSidebarOpen(o => !o)} title="Menu" aria-label="Toggle sidebar">
+            <MenuIcon />
+          </button>
           <span className="header-title">
             <LogoMark size={24} className="logo-mark" />
             <span className="header-name">{activeProject ? activeProject.name : 'MastraCode'}</span>
@@ -362,7 +377,7 @@ export default function App() {
             rows={1}
             disabled={status === 'error'}
           />
-          {transcript.running ? (
+          {busy ? (
             <button type="button" className="btn btn-danger btn-icon" onClick={() => void abort()} title="Stop" aria-label="Stop">
               <StopIcon />
             </button>
@@ -377,7 +392,7 @@ export default function App() {
           status={status}
           modeId={transcript.modeId}
           modelId={transcript.modelId}
-          running={transcript.running}
+          running={busy}
           followUpCount={transcript.followUpCount}
           omPhase={transcript.omPhase}
           usage={transcript.usage}

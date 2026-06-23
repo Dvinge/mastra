@@ -217,13 +217,9 @@ body::before {
   margin-inline: auto;
 }
 
-/* The user bubble shrinks to its content and hugs the right edge of the
-   centered column. */
-.transcript > .bubble-user {
-  width: fit-content;
-  max-width: min(82%, 660px);
-  margin-right: max(0px, calc((100% - 820px) / 2));
-}
+/* User messages right-align within the centered reading column. */
+.msg-user { align-items: flex-end; }
+.msg-assistant { align-items: stretch; }
 
 .empty {
   color: var(--fg-muted);
@@ -424,48 +420,52 @@ body::before {
 
 /* ── Messages ───────────────────────────────────────────────────────────── */
 
-.bubble {
-  padding: 11px 15px;
-  border-radius: var(--radius);
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   animation: fadeIn 0.22s ease-out;
 }
 
-.bubble-user {
+.msg-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.msg-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
   background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  max-width: 82%;
-  margin-left: auto;
-  box-shadow: var(--shadow-sm);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
 }
-
-.bubble-assistant {
-  background: transparent;
-  padding-left: 2px;
-}
-
-.role {
+.msg-role {
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--fg-muted);
-  margin-bottom: 5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
-
-/* Accent dot before the assistant role label. */
-.bubble-assistant .role::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--grad-accent);
-  box-shadow: 0 0 8px var(--accent-ring);
-}
-
 .role-steer { color: var(--yellow); }
+
+.bubble {
+  border-radius: var(--radius);
+}
+
+.bubble-user {
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  max-width: min(82%, 660px);
+  box-shadow: var(--shadow-sm);
+}
+
+.bubble-assistant {
+  background: transparent;
+}
 
 .text {
   white-space: pre-wrap;
@@ -579,6 +579,21 @@ body::before {
 .tool-status.running { background: var(--blue); box-shadow: 0 0 8px color-mix(in srgb, var(--blue) 60%, transparent); animation: pulse 1.4s infinite; }
 .tool-status.done { background: var(--green); }
 .tool-status.error { background: var(--red); box-shadow: 0 0 8px color-mix(in srgb, var(--red) 60%, transparent); }
+
+.tool-status-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+/* When an args preview is present it already consumes the free space, so the
+   label sits right after it rather than pushing to the far edge. */
+.tool-args-preview + .tool-status-label { margin-left: 0; }
+.tool-status-label.running { color: var(--blue); }
+.tool-status-label.done { color: var(--green); }
+.tool-status-label.error { color: var(--red); }
 
 .tool-name {
   font-family: var(--mono);
@@ -1426,3 +1441,69 @@ body::before {
 .transcript::-webkit-scrollbar-track { background: transparent; }
 .transcript::-webkit-scrollbar-thumb { background: var(--bg-surface3); border-radius: 3px; }
 .transcript::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+
+/* ── Responsive: off-canvas sidebar on narrow screens ──────────────────── */
+
+/* Hamburger + overlay are desktop-hidden; revealed under the breakpoint. */
+.menu-btn {
+  display: none;
+  background: var(--bg-surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.14s, color 0.14s;
+}
+.menu-btn:hover { background: var(--bg-surface3); color: var(--fg); }
+.sidebar-overlay { display: none; }
+
+@media (max-width: 768px) {
+  .menu-btn { display: grid; }
+
+  /* Sidebar slides in from the left as an overlay drawer. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(82vw, 300px);
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .app-layout.sidebar-open .sidebar { transform: translateX(0); }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .app-layout.sidebar-open .sidebar-overlay {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Tighten the reading column and chrome for small screens. */
+  .transcript { padding: 16px 12px 8px; }
+  .composer { padding: 10px 12px; }
+  .header { padding: 10px 12px; }
+  .header-name { font-size: 14px; }
+  .bubble-user { max-width: 90%; }
+
+  /* Larger touch targets. */
+  .mode-btn { padding: 7px 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none; }
+}

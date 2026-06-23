@@ -109,6 +109,17 @@ export const SendIcon = ({ size = 16, className }: IconProps) =>
 export const StopIcon = ({ size = 14, className }: IconProps) =>
   svg(<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none" />, size, className);
 
+export const MenuIcon = ({ size = 18, className }: IconProps) =>
+  svg(
+    <>
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </>,
+    size,
+    className,
+  );
+
 export const FolderIcon = ({ size = 16, className }: IconProps) =>
   svg(<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />, size, className);
 

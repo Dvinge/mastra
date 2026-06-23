@@ -1,7 +1,7 @@
 import type { PlanResume } from '@mastra/client-js';
 import { useState } from 'react';
 
-import { BellIcon, BrainIcon, ChevronIcon, CopyIcon, FolderIcon, TargetIcon, ToolIcon } from './icons';
+import { BellIcon, BrainIcon, ChevronIcon, CopyIcon, FolderIcon, LogoMark, TargetIcon, ToolIcon } from './icons';
 import { Markdown } from './Markdown';
 
 import type {
@@ -66,9 +66,16 @@ function CopyButton({ text }: { text: string }) {
 // Tool card (collapsible)
 // ---------------------------------------------------------------------------
 
+const STATUS_LABEL: Record<ToolCall['status'], string> = {
+  running: 'Running',
+  done: 'Done',
+  error: 'Failed',
+};
+
 function ToolCard({ tool }: { tool: ToolCall }) {
   const [expanded, setExpanded] = useState(false);
   const argsPreview = tool.args !== undefined ? JSON.stringify(tool.args) : tool.argsText;
+  const argsPretty = tool.args !== undefined ? stringify(tool.args) : tool.argsText;
   const resultText = tool.status !== 'running' && tool.result !== undefined ? stringify(tool.result) : undefined;
 
   return (
@@ -77,15 +84,16 @@ function ToolCard({ tool }: { tool: ToolCall }) {
         <span className="tool-icon"><ToolIcon name={tool.toolName} /></span>
         <span className="tool-name">{tool.toolName}</span>
         {argsPreview && !expanded && <span className="tool-args-preview">{truncate(argsPreview, 72)}</span>}
-        <span className={`tool-status ${tool.status}`} title={tool.status} />
+        <span className={`tool-status-label ${tool.status}`}>{STATUS_LABEL[tool.status]}</span>
+        <span className={`tool-status ${tool.status}`} title={STATUS_LABEL[tool.status]} />
         <ChevronIcon size={13} className={`tool-chevron ${expanded ? 'open' : ''}`} />
       </button>
       {expanded && (
         <div className="tool-body">
-          {argsPreview && (
+          {argsPretty && (
             <div className="tool-section">
-              <div className="tool-section-head"><span>Arguments</span><CopyButton text={argsPreview} /></div>
-              <pre className="result-block">{argsPreview}</pre>
+              <div className="tool-section-head"><span>Arguments</span><CopyButton text={argsPretty} /></div>
+              <pre className="result-block">{argsPretty}</pre>
             </div>
           )}
           {tool.output && (
@@ -328,9 +336,13 @@ export function Transcript({
 
 function UserBubble({ entry }: { entry: UserEntry }) {
   return (
-    <div className="bubble bubble-user">
-      <div className={`role ${entry.steer ? 'role-steer' : ''}`}>{entry.steer ? 'steer' : 'you'}</div>
-      <div className="text">{entry.text}</div>
+    <div className="msg msg-user">
+      <div className="msg-head">
+        <span className={`msg-role ${entry.steer ? 'role-steer' : ''}`}>{entry.steer ? 'Steer' : 'You'}</span>
+      </div>
+      <div className="bubble bubble-user">
+        <div className="text">{entry.text}</div>
+      </div>
     </div>
   );
 }
@@ -338,17 +350,22 @@ function UserBubble({ entry }: { entry: UserEntry }) {
 function AssistantBubble({ entry }: { entry: AssistantEntry }) {
   if (!entry.text && entry.tools.length === 0) return null;
   return (
-    <div className="bubble bubble-assistant">
-      <div className="role">agent</div>
-      {entry.text && (
-        <div>
-          <Markdown>{entry.text}</Markdown>
-          {entry.streaming && <span className="streaming-cursor" />}
-        </div>
-      )}
-      {entry.tools.map(t => (
-        <ToolCard key={t.toolCallId} tool={t} />
-      ))}
+    <div className="msg msg-assistant">
+      <div className="msg-head">
+        <span className="msg-avatar"><LogoMark size={14} /></span>
+        <span className="msg-role">Agent</span>
+      </div>
+      <div className="bubble bubble-assistant">
+        {entry.text && (
+          <div className="prose">
+            <Markdown>{entry.text}</Markdown>
+            {entry.streaming && <span className="streaming-cursor" />}
+          </div>
+        )}
+        {entry.tools.map(t => (
+          <ToolCard key={t.toolCallId} tool={t} />
+        ))}
+      </div>
     </div>
   );
 }
