@@ -1,75 +1,89 @@
 /* MastraCode Web — dark-mode-first design tokens + component styles */
 
 :root {
-  /* Layered near-black surfaces with a faint cool tint for depth. */
-  --bg: #0a0b10;
-  --bg-surface: #101218;
-  --bg-surface2: #161922;
-  --bg-surface3: #1d212c;
-  --bg-elevated: #1a1d27;
-  --fg: #e8eaf0;
-  --fg-dim: #9aa1b2;
-  /* Lifted from #5a6072 to clear WCAG AA (>=4.5:1) for small secondary text on
-     dark surfaces (status line, timestamps, captions, tool metadata). */
-  --fg-muted: #868ca1;
-  /* MastraCode identity: indigo→violet accent. */
-  --accent: #8b7bf7;
-  --accent-2: #b18bff;
-  --accent-hover: #a594ff;
-  --accent-soft: rgba(139, 123, 247, 0.14);
-  --accent-ring: rgba(139, 123, 247, 0.4);
-  --border: #242836;
-  --border-strong: #2f3445;
-  --border-light: #1a1d27;
-  --green: #46d18a;
-  --yellow: #e3b341;
-  --red: #ff6b6b;
-  --error: #ff6b6b;
-  --blue: #6cb6ff;
-  --purple: #b18bff;
-  --orange: #ff9d5c;
-  --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
-  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-  --radius-lg: 14px;
-  --radius: 10px;
-  --radius-sm: 7px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
-  --grad-accent: linear-gradient(135deg, #8b7bf7 0%, #b18bff 100%);
+  /* Aligned with the Mastra playground-ui design system (theme.css).
+     Surfaces are OKLCH layered near-blacks; brand accent is Mastra green.
+     Variable names are kept stable so component CSS inherits the new look. */
+  --bg: oklch(0% 0 0deg); /* surface1 */
+  --bg-surface: oklch(16% 0 0deg); /* surface2 */
+  --bg-surface2: oklch(18% 0 0deg); /* surface3 */
+  --bg-surface3: oklch(21.78% 0 0deg); /* surface4 */
+  --bg-elevated: oklch(24.35% 0 0deg); /* surface5 */
+  --fg: oklch(0.985 0 0); /* neutral6 */
+  --fg-dim: oklch(0.705 0 0); /* neutral3 */
+  /* Slightly lighter than DS neutral2 (0.553) so muted text clears WCAG AA on
+     the layered dark surfaces (status line, timestamps, captions). */
+  --fg-muted: oklch(0.62 0 0);
+  /* Mastra brand green + supporting accents (DS accent ramp). */
+  --accent: oklch(0.723 0.219 149.579); /* accent1 (green) */
+  --accent-2: oklch(0.769 0.188 70.08); /* accent6 (amber) */
+  --accent-hover: oklch(0.78 0.2 149.579);
+  --accent-soft: oklch(0.723 0.219 149.579 / 0.14);
+  --accent-ring: oklch(0.723 0.219 149.579 / 0.4);
+  --border: oklch(100% 0 0deg / 7%); /* border1 */
+  --border-strong: oklch(100% 0 0deg / 11%); /* border2 */
+  --border-light: oklch(100% 0 0deg / 4%);
+  --green: oklch(0.723 0.219 149.579); /* accent1 */
+  --yellow: oklch(0.769 0.188 70.08); /* accent6 */
+  --red: oklch(0.637 0.237 25.331); /* accent2 / error */
+  --error: oklch(0.637 0.237 25.331);
+  --blue: oklch(0.707 0.165 254.624); /* accent5 */
+  --purple: oklch(0.627 0.265 303.9);
+  --orange: oklch(0.769 0.188 70.08);
+  --mono: var(--font-mono, ui-monospace, sfmono-regular, menlo, monaco, consolas, 'Liberation Mono', monospace);
+  --sans: var(
+    --font-body,
+    system-ui,
+    ui-sans-serif,
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol'
+  );
+  /* DS radius scale: 12px cards (xl), 6px controls (lg), 4px small (md). */
+  --radius-lg: 12px;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow: 0 4px 6px oklch(0 0 0 / 0.3);
+  --shadow-lg: 0 14px 48px -36px oklch(0% 0 0deg / 85%);
+  /* Brand chrome is monochrome (DS primary = near-white on dark); accent is
+     reserved for semantic/brand emphasis, so the "gradient" is a flat accent. */
+  --grad-accent: var(--accent);
 }
 
 [data-theme='light'] {
-  /* Page is a soft grey so white surfaces (header, sidebar, cards) read as
-     distinct, elevated layers rather than blending into the background. */
-  --bg: #eef0f5;
-  --bg-surface: #ffffff;
-  --bg-surface2: #f4f5f9;
-  --bg-surface3: #e7e9f1;
-  --bg-elevated: #ffffff;
-  --fg: #15171f;
-  --fg-dim: #545a6b;
-  /* Darkened from #a7adbd to clear WCAG AA (>=4.5:1) for small secondary text. */
-  --fg-muted: #6b7184;
-  --accent: #5a44d6;
-  --accent-2: #7c5cf0;
-  --accent-hover: #4a37c0;
-  --accent-soft: rgba(90, 68, 214, 0.1);
-  --accent-ring: rgba(90, 68, 214, 0.34);
-  --border: #dcdfea;
-  --border-strong: #c6cad9;
-  --border-light: #e8eaf2;
-  --green: #138a4f;
-  --yellow: #9a6b0f;
-  --red: #d83a3f;
-  --error: #e5484d;
-  --blue: #2b7fff;
-  --purple: #8b5cf6;
-  --orange: #e07a2c;
-  --shadow-sm: 0 1px 2px rgba(20, 22, 40, 0.06);
-  --shadow: 0 4px 16px rgba(20, 22, 40, 0.08);
-  --shadow-lg: 0 12px 40px rgba(20, 22, 40, 0.12);
-  --grad-accent: linear-gradient(135deg, #6d56e8 0%, #8b5cf6 100%);
+  /* Light theme mirrors playground-ui's html.light: a soft-grey page with
+     near-white layered surfaces, so chrome reads as distinct elevated layers. */
+  --bg: oklch(95.6% 0 0deg); /* surface1 */
+  --bg-surface: oklch(98.5% 0 0deg); /* surface2 */
+  --bg-surface2: oklch(100% 0 0deg); /* surface3 */
+  --bg-surface3: oklch(96.5% 0 0deg); /* surface4 */
+  --bg-elevated: oklch(100% 0 0deg); /* surface3/elevated */
+  --fg: oklch(0.13 0 0); /* neutral6 */
+  --fg-dim: oklch(0.446 0 0); /* neutral2 */
+  /* Slightly darker than DS neutral1 (0.554) so muted text clears WCAG AA on
+     the soft-grey page background, not just on white surfaces. */
+  --fg-muted: oklch(0.5 0 0);
+  --accent: oklch(0.627 0.194 149.214); /* accent1 (green, light) */
+  --accent-2: oklch(0.666 0.179 58.318); /* accent6 (amber, light) */
+  --accent-hover: oklch(0.57 0.18 149.214);
+  --accent-soft: oklch(0.627 0.194 149.214 / 0.1);
+  --accent-ring: oklch(0.627 0.194 149.214 / 0.34);
+  --border: oklch(20.8% 0 0deg / 10%); /* border1 */
+  --border-strong: oklch(20.8% 0 0deg / 16%); /* border2 */
+  --border-light: oklch(20.8% 0 0deg / 4%);
+  --green: oklch(0.627 0.194 149.214);
+  --yellow: oklch(0.666 0.179 58.318);
+  --red: oklch(0.577 0.245 27.325); /* error (light) */
+  --error: oklch(0.577 0.245 27.325);
+  --blue: oklch(0.623 0.214 259.815); /* accent5 (light) */
+  --purple: oklch(0.627 0.265 303.9);
+  --orange: oklch(0.666 0.179 58.318);
+  --shadow-sm: 0 1px 2px oklch(24% 0 0deg / 4%);
+  --shadow: 0 4px 6px oklch(24% 0 0deg / 8%);
+  --shadow-lg: 0 1px 2px oklch(24% 0 0deg / 4%), 0 18px 48px -34px oklch(24% 0 0deg / 22%);
+  --grad-accent: var(--accent);
 }
 
 *,
@@ -144,13 +158,13 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(60rem 40rem at 18% -10%, rgba(139, 123, 247, 0.08), transparent 70%),
-    radial-gradient(50rem 40rem at 100% 0%, rgba(177, 139, 255, 0.05), transparent 60%);
+    radial-gradient(60rem 40rem at 18% -10%, oklch(0.723 0.219 149.579 / 0.07), transparent 70%),
+    radial-gradient(50rem 40rem at 100% 0%, oklch(0.769 0.188 70.08 / 0.04), transparent 60%);
 }
 [data-theme='light'] body::before {
   background:
-    radial-gradient(60rem 40rem at 18% -10%, rgba(109, 86, 232, 0.06), transparent 70%),
-    radial-gradient(50rem 40rem at 100% 0%, rgba(139, 92, 246, 0.04), transparent 60%);
+    radial-gradient(60rem 40rem at 18% -10%, oklch(0.627 0.194 149.214 / 0.05), transparent 70%),
+    radial-gradient(50rem 40rem at 100% 0%, oklch(0.666 0.179 58.318 / 0.03), transparent 60%);
 }
 
 /* ── Layout ─────────────────────────────────────────────────────────────── */
@@ -161,7 +175,7 @@ body::before {
   justify-content: space-between;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-surface) 75%, transparent);
+  background: color-mix(in oklch, var(--bg-surface) 75%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   flex-shrink: 0;
@@ -274,11 +288,12 @@ body::before {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-surface2);
+  color: var(--fg);
   cursor: pointer;
   transition: border-color 0.14s, background 0.14s, transform 0.1s;
 }
 .suggestion:hover {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-color: color-mix(in oklch, var(--accent) 40%, var(--border));
   background: var(--bg-surface3);
   transform: translateY(-1px);
 }
@@ -324,7 +339,7 @@ body::before {
   align-items: flex-end;
   padding: 14px 18px;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-surface) 70%, transparent);
+  background: color-mix(in oklch, var(--bg-surface) 70%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   flex-shrink: 0;
@@ -398,18 +413,21 @@ body::before {
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.4; cursor: default; transform: none; }
 
+/* DS primary: high-contrast monochrome (near-white on dark / near-black on
+   light), color reserved for semantic emphasis — matches playground-ui Button. */
 .btn-primary {
-  background: var(--grad-accent);
-  color: #fff;
+  background: var(--fg);
+  color: var(--bg);
   border-color: transparent;
-  box-shadow: 0 2px 14px var(--accent-soft);
+  font-weight: 500;
 }
 
-.btn-primary:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 4px 18px var(--accent-soft); }
+.btn-primary:hover:not(:disabled) { background: color-mix(in oklch, var(--fg) 90%, transparent); }
+.btn-primary:active:not(:disabled) { background: color-mix(in oklch, var(--fg) 80%, transparent); }
 
 .btn-danger {
   background: var(--red);
-  color: #fff;
+  color: oklch(0.98 0.01 18);
   border-color: transparent;
 }
 
@@ -434,10 +452,10 @@ body::before {
 
 .mode-btn:hover { background: var(--bg-surface3); color: var(--fg); border-color: var(--border-strong); }
 .mode-btn.active {
-  background: var(--grad-accent);
-  color: #fff;
+  background: var(--fg);
+  color: var(--bg);
   border-color: transparent;
-  box-shadow: 0 2px 12px var(--accent-soft);
+  font-weight: 600;
 }
 
 .thread-btn {
@@ -451,7 +469,7 @@ body::before {
 }
 
 .thread-btn:hover { background: var(--bg-surface2); }
-.thread-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.thread-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
 /* ── Input ──────────────────────────────────────────────────────────────── */
 
@@ -516,7 +534,7 @@ body::before {
   border-radius: 6px;
   background: var(--accent-soft);
   color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  border: 1px solid color-mix(in oklch, var(--accent) 24%, transparent);
 }
 .msg-role {
   font-size: 10.5px;
@@ -534,7 +552,7 @@ body::before {
 .bubble-user {
   padding: 10px 14px;
   background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border: 1px solid color-mix(in oklch, var(--accent) 22%, transparent);
   max-width: min(82%, 660px);
   box-shadow: var(--shadow-sm);
 }
@@ -602,8 +620,8 @@ body::before {
   box-shadow: var(--shadow-sm);
 }
 
-.tool-card.running { border-color: color-mix(in srgb, var(--blue) 40%, var(--border)); }
-.tool-card.error { border-color: color-mix(in srgb, var(--red) 45%, var(--border)); }
+.tool-card.running { border-color: color-mix(in oklch, var(--blue) 40%, var(--border)); }
+.tool-card.error { border-color: color-mix(in oklch, var(--red) 45%, var(--border)); }
 
 .tool-head {
   display: flex;
@@ -662,7 +680,7 @@ body::before {
   color: var(--fg-muted);
   cursor: pointer;
   padding: 2px 5px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   transition: color 0.14s, background 0.14s;
@@ -680,9 +698,9 @@ body::before {
   flex-shrink: 0;
 }
 
-.tool-status.running { background: var(--blue); box-shadow: 0 0 8px color-mix(in srgb, var(--blue) 60%, transparent); animation: pulse 1.4s infinite; }
+.tool-status.running { background: var(--blue); box-shadow: 0 0 8px color-mix(in oklch, var(--blue) 60%, transparent); animation: pulse 1.4s infinite; }
 .tool-status.done { background: var(--green); }
-.tool-status.error { background: var(--red); box-shadow: 0 0 8px color-mix(in srgb, var(--red) 60%, transparent); }
+.tool-status.error { background: var(--red); box-shadow: 0 0 8px color-mix(in oklch, var(--red) 60%, transparent); }
 
 .tool-status-label {
   font-size: 10px;
@@ -846,9 +864,9 @@ body::before {
 .diff-text { flex: 1; padding-right: 10px; }
 /* Removed/added lines carry the change signal via a background tint + gutter;
    syntax-highlight tokens (from highlight.js) provide the text colors. */
-.diff-line.removed { background: color-mix(in srgb, var(--red) 13%, transparent); }
+.diff-line.removed { background: color-mix(in oklch, var(--red) 13%, transparent); }
 .diff-line.removed .diff-gutter { color: var(--red); }
-.diff-line.added { background: color-mix(in srgb, var(--green) 13%, transparent); }
+.diff-line.added { background: color-mix(in oklch, var(--green) 13%, transparent); }
 .diff-line.added .diff-gutter { color: var(--green); }
 /* Default token color before hljs spans take over. */
 .diff .diff-text { color: var(--fg); }
@@ -856,7 +874,7 @@ body::before {
 /* ── Subagent card ──────────────────────────────────────────────────────── */
 
 .subagent-card {
-  border: 1px solid color-mix(in srgb, var(--purple) 45%, var(--border));
+  border: 1px solid color-mix(in oklch, var(--purple) 45%, var(--border));
   border-left: 3px solid var(--purple);
   border-radius: var(--radius);
   padding: 8px 12px;
@@ -890,7 +908,7 @@ body::before {
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--blue) 16%, transparent);
+  background: color-mix(in oklch, var(--blue) 16%, transparent);
   color: var(--blue);
   flex-shrink: 0;
 }
@@ -913,8 +931,8 @@ body::before {
   background: var(--bg-surface3);
   color: var(--fg-dim);
 }
-.notif-priority.prio-high { background: color-mix(in srgb, var(--red) 18%, transparent); color: var(--red); }
-.notif-priority.prio-medium { background: color-mix(in srgb, var(--yellow) 18%, transparent); color: var(--yellow); }
+.notif-priority.prio-high { background: color-mix(in oklch, var(--red) 18%, transparent); color: var(--red); }
+.notif-priority.prio-medium { background: color-mix(in oklch, var(--yellow) 18%, transparent); color: var(--yellow); }
 .notif-priority.prio-low { background: var(--bg-surface3); color: var(--fg-dim); }
 .notif-count { margin-left: auto; font-size: 11px; color: var(--fg-dim); }
 
@@ -935,9 +953,9 @@ body::before {
 
 .notice.error {
   color: var(--red);
-  border-color: color-mix(in srgb, var(--red) 40%, var(--border));
+  border-color: color-mix(in oklch, var(--red) 40%, var(--border));
   border-left-color: var(--red);
-  background: color-mix(in srgb, var(--red) 8%, transparent);
+  background: color-mix(in oklch, var(--red) 8%, transparent);
 }
 
 /* ── Goal panel ─────────────────────────────────────────────────────────── */
@@ -948,7 +966,7 @@ body::before {
   gap: 10px;
   padding: 9px 18px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--accent-soft) 55%, var(--bg-surface));
+  background: color-mix(in oklch, var(--accent-soft) 55%, var(--bg-surface));
   font-size: 12px;
   flex-shrink: 0;
 }
@@ -987,7 +1005,7 @@ body::before {
 .status-item svg { color: var(--fg-muted); }
 .status-model { color: var(--fg-dim); font-variant-numeric: tabular-nums; }
 .status-state { text-transform: capitalize; }
-.badge-mode { text-transform: capitalize; background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.badge-mode { text-transform: capitalize; background: var(--accent-soft); color: var(--accent); border-color: color-mix(in oklch, var(--accent) 30%, transparent); }
 
 /* ── Status line ────────────────────────────────────────────────────────── */
 
@@ -1021,9 +1039,9 @@ body::before {
   box-shadow: 0 0 0 3px transparent;
 }
 
-.connection-dot.ready { background: var(--green); box-shadow: 0 0 8px color-mix(in srgb, var(--green) 60%, transparent); }
+.connection-dot.ready { background: var(--green); box-shadow: 0 0 8px color-mix(in oklch, var(--green) 60%, transparent); }
 .connection-dot.reconnecting { background: var(--yellow); animation: pulse 1.5s infinite; }
-.connection-dot.error { background: var(--red); box-shadow: 0 0 8px color-mix(in srgb, var(--red) 60%, transparent); }
+.connection-dot.error { background: var(--red); box-shadow: 0 0 8px color-mix(in oklch, var(--red) 60%, transparent); }
 .connection-dot.connecting { background: var(--fg-muted); animation: pulse 1.5s infinite; }
 
 /* ── Animations ─────────────────────────────────────────────────────────── */
@@ -1212,7 +1230,7 @@ body::before {
 
 .sidebar {
   width: 264px;
-  background: color-mix(in srgb, var(--bg-surface) 70%, transparent);
+  background: color-mix(in oklch, var(--bg-surface) 70%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-right: 1px solid var(--border);
@@ -1454,8 +1472,8 @@ body::before {
   flex-direction: column;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -1702,7 +1720,7 @@ body::before {
   font-weight: 600;
   color: var(--fg-dim);
   padding: 5px 11px;
-  border-radius: 5px;
+  border-radius: var(--radius);
   transition: background 0.14s, color 0.14s;
 }
 .seg-btn.active { background: var(--bg-surface); color: var(--fg); box-shadow: var(--shadow-sm); }
@@ -1769,8 +1787,8 @@ body::before {
   border-radius: 999px;
   flex-shrink: 0;
 }
-.provider-pill.stored { background: color-mix(in srgb, var(--green) 18%, transparent); color: var(--green); }
-.provider-pill.env { background: color-mix(in srgb, var(--blue) 18%, transparent); color: var(--blue); }
+.provider-pill.stored { background: color-mix(in oklch, var(--green) 18%, transparent); color: var(--green); }
+.provider-pill.env { background: color-mix(in oklch, var(--blue) 18%, transparent); color: var(--blue); }
 .provider-pill.none { background: var(--bg-surface3); color: var(--fg-muted); }
 .provider-actions, .provider-edit { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .provider-key-input {
@@ -1800,7 +1818,7 @@ body::before {
 .provider-error {
   font-size: 12px;
   color: var(--red);
-  background: color-mix(in srgb, var(--red) 12%, transparent);
+  background: color-mix(in oklch, var(--red) 12%, transparent);
   border-radius: var(--radius-sm);
   padding: 7px 10px;
   margin-bottom: 10px;
@@ -1884,7 +1902,7 @@ body::before {
 }
 .toast-success::before { background: var(--green); }
 .toast-error::before { background: var(--red); }
-.toast-error { border-color: color-mix(in srgb, var(--red) 45%, var(--border-strong)); }
+.toast-error { border-color: color-mix(in oklch, var(--red) 45%, var(--border-strong)); }
 
 @media (max-width: 768px) {
   .toast-viewport { left: 12px; right: 12px; bottom: 12px; align-items: stretch; }
@@ -1910,7 +1928,7 @@ body::before {
   flex-shrink: 0;
 }
 .conn-banner.reconnecting {
-  background: color-mix(in srgb, var(--yellow) 14%, transparent);
+  background: color-mix(in oklch, var(--yellow) 14%, transparent);
   color: var(--yellow);
 }
 .conn-banner.reconnecting .conn-dot {
@@ -1918,7 +1936,7 @@ body::before {
   animation: pulse 1.2s infinite;
 }
 .conn-banner.error {
-  background: color-mix(in srgb, var(--red) 14%, transparent);
+  background: color-mix(in oklch, var(--red) 14%, transparent);
   color: var(--red);
 }
 .conn-banner.error .conn-dot { background: var(--red); }
