@@ -1,5 +1,15 @@
 # mastracode
 
+## 0.25.1-alpha.1
+
+### Patch Changes
+
+- Expand `${VAR}`, `${VAR:-default}`, and bare `$VAR` references in MCP server HTTP headers. Header values such as `"x-api-key": "${MY_API_KEY}"` in `mcp.json` are now resolved from the environment when the config is loaded, instead of being sent verbatim. This matches how Claude Code reads `.mcp.json` and lets header-authenticated HTTP servers pull secrets from the environment. ([#18240](https://github.com/mastra-ai/mastra/pull/18240))
+
+- Updated dependencies [[`e940f09`](https://github.com/mastra-ai/mastra/commit/e940f099ef5d18b403e6f2b4937e086a4da857b1)]:
+  - @mastra/memory@1.21.2-alpha.0
+  - @mastra/core@1.46.1-alpha.1
+
 ## 0.25.1-alpha.0
 
 ### Patch Changes

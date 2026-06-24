@@ -1,5 +1,16 @@
 # @mastra/playground-ui
 
+## 36.0.1-alpha.1
+
+### Patch Changes
+
+- Show an unavailable state when the configured observability storage does not support listing logs, and stop polling the logs endpoint for that non-transient capability error. ([#18375](https://github.com/mastra-ai/mastra/pull/18375))
+
+- Updated dependencies [[`e940f09`](https://github.com/mastra-ai/mastra/commit/e940f099ef5d18b403e6f2b4937e086a4da857b1)]:
+  - @mastra/core@1.46.1-alpha.1
+  - @mastra/client-js@1.27.1-alpha.1
+  - @mastra/react@1.1.2-alpha.1
+
 ## 36.0.1-alpha.0
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @mastra/core
 
+## 1.46.1-alpha.1
+
+### Patch Changes
+
+- Removed experimental flag from retrieval-mode observational memory. The retrieval API is now stable. ([#18324](https://github.com/mastra-ai/mastra/pull/18324))
+
 ## 1.46.1-alpha.0
 
 ### Patch Changes
