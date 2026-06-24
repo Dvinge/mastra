@@ -185,12 +185,23 @@ export async function createDriver(opts: {
 function entryText(entry: TimelineEntry): string {
   switch (entry.kind) {
     case 'user':
-    case 'assistant':
-      return [entry.kind === 'assistant' ? (entry as { text: string }).text : (entry as { text: string }).text]
-        .concat(entry.kind === 'assistant' ? (entry as { tools: { toolName: string; output: string }[] }).tools.flatMap(t => [t.toolName, t.output]) : [])
-        .join(' ');
+      return entry.text;
+    case 'assistant': {
+      // Flatten the ordered segments to text, interleaving tool name/output in
+      // execution order — exactly how they render.
+      const parts: string[] = [];
+      for (const seg of entry.segments) {
+        if (seg.kind === 'text' || seg.kind === 'thinking') {
+          parts.push(seg.text);
+        } else {
+          const tool = entry.toolsById[seg.toolCallId];
+          if (tool) parts.push(tool.toolName, tool.output);
+        }
+      }
+      return parts.join(' ');
+    }
     case 'notice':
-      return (entry as { text: string }).text;
+      return entry.text;
     case 'approval':
       return `approve ${(entry as ApprovalPrompt).toolName}`;
     case 'suspension':

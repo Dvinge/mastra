@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
 
 import { initialTranscript, transcriptReducer } from '../ui/transcript.js';
+import type { TimelineEntry } from '../ui/transcript.js';
 import type { HarnessMessage } from '@mastra/client-js';
+
+/** Flatten an assistant entry's ordered text/thinking segments to a string. */
+function assistantText(entry: TimelineEntry): string {
+  if (entry.kind !== 'assistant') return '';
+  return entry.segments.map(s => (s.kind === 'text' || s.kind === 'thinking' ? s.text : '')).join('');
+}
 
 /**
  * Switching to an existing thread must render its persisted history. The
@@ -35,7 +42,8 @@ describe('transcript hydrate (thread history rendering)', () => {
     expect(state.modelId).toBe('openai/gpt-5.4-mini');
     expect(state.entries).toHaveLength(2);
     expect(state.entries[0]).toMatchObject({ kind: 'user', id: 'u1', text: 'hello there' });
-    expect(state.entries[1]).toMatchObject({ kind: 'assistant', id: 'a1', text: 'hi, how can I help?', streaming: false });
+    expect(state.entries[1]).toMatchObject({ kind: 'assistant', id: 'a1', streaming: false });
+    expect(assistantText(state.entries[1])).toBe('hi, how can I help?');
   });
 
   it('omits system messages from the rendered transcript', () => {
@@ -61,9 +69,9 @@ describe('transcript hydrate (thread history rendering)', () => {
     });
     expect(state.threadId).toBe('B');
     expect(state.entries).toHaveLength(2);
-    const text = state.entries.map(e => ('text' in e ? e.text : '')).join('\n');
-    expect(text).toContain('thread B message');
-    expect(text).not.toContain('thread A message');
+    const allText = state.entries.map(e => (e.kind === 'user' ? e.text : assistantText(e))).join('\n');
+    expect(allText).toContain('thread B message');
+    expect(allText).not.toContain('thread A message');
   });
 
   it('reconstructs tool calls (name, args, result) on the assistant entry', () => {
@@ -86,15 +94,43 @@ describe('transcript hydrate (thread history rendering)', () => {
     const assistant = state.entries.find(e => e.kind === 'assistant');
     expect(assistant).toBeDefined();
     if (assistant?.kind !== 'assistant') throw new Error('expected assistant entry');
-    expect(assistant.text).toBe('Let me read that file.');
-    expect(assistant.tools).toHaveLength(1);
-    expect(assistant.tools[0]).toMatchObject({
+    expect(assistantText(assistant)).toBe('Let me read that file.');
+    const toolIds = Object.keys(assistant.toolsById);
+    expect(toolIds).toHaveLength(1);
+    expect(assistant.toolsById['tc-1']).toMatchObject({
       toolCallId: 'tc-1',
       toolName: 'read_file',
       args: { path: 'README.md' },
       status: 'done',
       result: 'file contents here',
     });
+  });
+
+  it('preserves execution order: text → tool → text interleaved, not grouped', () => {
+    const msg: HarnessMessage = {
+      id: 'a1',
+      role: 'assistant',
+      content: [
+        { type: 'text', text: 'First I will read it.' },
+        { type: 'tool_call', id: 'tc-1', name: 'read_file', args: { path: 'a.ts' } },
+        { type: 'tool_result', id: 'tc-1', result: 'contents', isError: false },
+        { type: 'text', text: 'Now I will edit it.' },
+        { type: 'tool_call', id: 'tc-2', name: 'write_file', args: { path: 'a.ts' } },
+        { type: 'tool_result', id: 'tc-2', result: 'ok', isError: false },
+        { type: 'text', text: 'Done.' },
+      ],
+    } as unknown as HarnessMessage;
+    const state = transcriptReducer(initialTranscript, { type: 'hydrate', messages: [msg], threadId: 't' });
+    const assistant = state.entries[0];
+    if (assistant.kind !== 'assistant') throw new Error('expected assistant entry');
+    // The segment order must mirror content order, not bucket tools at the end.
+    expect(assistant.segments.map(s => (s.kind === 'tool' ? `tool:${s.toolCallId}` : s.kind))).toEqual([
+      'text',
+      'tool:tc-1',
+      'text',
+      'tool:tc-2',
+      'text',
+    ]);
   });
 
   it('marks a tool as errored when its result is an error', () => {
@@ -109,7 +145,7 @@ describe('transcript hydrate (thread history rendering)', () => {
     const state = transcriptReducer(initialTranscript, { type: 'hydrate', messages: [msg], threadId: 't' });
     const assistant = state.entries[0];
     if (assistant.kind !== 'assistant') throw new Error('expected assistant entry');
-    expect(assistant.tools[0].status).toBe('error');
+    expect(assistant.toolsById['tc-9'].status).toBe('error');
   });
 
   it('produces an empty transcript for a thread with no history', () => {

@@ -46,20 +46,27 @@ describe('web scenario: sse-reconnect', () => {
       // Send first message and wait for response
       await session.sendMessage('before disconnect');
 
+      // Flatten transcript entries to text (assistant entries hold ordered
+      // segments rather than a single text field).
+      const flatten = () =>
+        transcript.entries
+          .map(e => {
+            if (e.kind === 'assistant') {
+              return e.segments.map(s => (s.kind === 'text' || s.kind === 'thinking' ? s.text : '')).join('');
+            }
+            if (e.kind === 'notice') return e.text;
+            return '';
+          })
+          .join('\n');
+
       // Wait for assistant response in transcript
       const waitForText = async (pattern: string, timeoutMs = 15_000) => {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
-          const text = transcript.entries.map(e => {
-            if (e.kind === 'assistant') return e.text;
-            if (e.kind === 'notice') return e.text;
-            return '';
-          }).join('\n');
-          if (text.includes(pattern)) return;
+          if (flatten().includes(pattern)) return;
           await new Promise(r => setTimeout(r, 25));
         }
-        const text = transcript.entries.map(e => ('text' in e ? e.text : '')).join('\n');
-        throw new Error(`timeout waiting for "${pattern}"\n--- transcript ---\n${text}`);
+        throw new Error(`timeout waiting for "${pattern}"\n--- transcript ---\n${flatten()}`);
       };
 
       await waitForText('PRE_DISCONNECT_RESPONSE');
@@ -92,10 +99,7 @@ describe('web scenario: sse-reconnect', () => {
       // Verify both pre- and post-reconnect behavior:
       // 1. State re-sync succeeded (reconnectState had valid data)
       // 2. New subscription delivers events (POST_RECONNECT_RESPONSE appeared)
-      const finalText = transcript.entries
-        .map(e => ('text' in e ? e.text : ''))
-        .join('\n');
-      expect(finalText).toContain('POST_RECONNECT_RESPONSE');
+      expect(flatten()).toContain('POST_RECONNECT_RESPONSE');
 
       sub2.unsubscribe();
     } finally {

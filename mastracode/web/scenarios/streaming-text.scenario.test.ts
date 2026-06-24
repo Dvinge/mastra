@@ -20,8 +20,12 @@ const scenario: WebScenario = {
     const last = assistantEntries[assistantEntries.length - 1];
     if (!last || last.kind !== 'assistant') throw new Error('No assistant entry found');
     if (last.streaming) throw new Error('Expected streaming=false after message_end, got true');
-    if (!last.text.includes('Streaming test response')) {
-      throw new Error(`Unexpected text: ${last.text}`);
+    const assistantText = last.segments
+      .filter(s => s.kind === 'text')
+      .map(s => (s.kind === 'text' ? s.text : ''))
+      .join('');
+    if (!assistantText.includes('Streaming test response')) {
+      throw new Error(`Unexpected text: ${assistantText}`);
     }
   },
 };

@@ -461,39 +461,57 @@ function UserBubble({ entry }: { entry: UserEntry }) {
 function AssistantBubble({ entry }: { entry: AssistantEntry }) {
   // null = no group override; true/false = expand/collapse all in this bubble.
   const [allExpanded, setAllExpanded] = useState<boolean | undefined>(undefined);
-  if (!entry.text && entry.tools.length === 0) return null;
-  const toolCount = entry.tools.length;
+
+  const toolCount = entry.segments.reduce((n, s) => (s.kind === 'tool' ? n + 1 : n), 0);
+  const hasText = entry.segments.some(s => s.kind === 'text' && s.text.trim().length > 0);
+  if (!hasText && toolCount === 0) return null;
+
+  // The streaming cursor trails the final text segment while the model is still
+  // generating (so it sits at the live insertion point, not after a tool card).
+  const lastTextIdx = (() => {
+    for (let i = entry.segments.length - 1; i >= 0; i--) {
+      if (entry.segments[i].kind === 'text') return i;
+    }
+    return -1;
+  })();
+
   return (
     <div className="msg msg-assistant">
       <div className="msg-head">
         <span className="msg-avatar"><LogoMark size={14} /></span>
         <span className="msg-role">Agent</span>
+        {toolCount > 1 && (
+          <button
+            type="button"
+            className="tool-group-toggle"
+            onClick={() => setAllExpanded(v => (v === true ? false : true))}
+            aria-pressed={allExpanded === true}
+          >
+            {allExpanded ? 'Collapse all' : `Expand all (${toolCount})`}
+          </button>
+        )}
       </div>
       <div className="bubble bubble-assistant">
-        {entry.text && (
-          <div className="prose">
-            <Markdown>{entry.text}</Markdown>
-            {entry.streaming && <span className="streaming-cursor" />}
-          </div>
-        )}
-        {toolCount > 1 && (
-          <div className="tool-group-head">
-            <span className="tool-group-count">
-              {toolCount} tool {toolCount === 1 ? 'call' : 'calls'}
-            </span>
-            <button
-              type="button"
-              className="tool-group-toggle"
-              onClick={() => setAllExpanded(v => !v)}
-              aria-pressed={allExpanded === true}
-            >
-              {allExpanded ? 'Collapse all' : 'Expand all'}
-            </button>
-          </div>
-        )}
-        {entry.tools.map(t => (
-          <ToolCard key={t.toolCallId} tool={t} forceExpanded={allExpanded} />
-        ))}
+        {entry.segments.map((seg, i) => {
+          if (seg.kind === 'text') {
+            return (
+              <div className="prose" key={`t-${i}`}>
+                <Markdown>{seg.text}</Markdown>
+                {entry.streaming && i === lastTextIdx && <span className="streaming-cursor" />}
+              </div>
+            );
+          }
+          if (seg.kind === 'thinking') {
+            return (
+              <div className="thinking-block" key={`k-${i}`}>
+                <Markdown>{seg.text}</Markdown>
+              </div>
+            );
+          }
+          const tool = entry.toolsById[seg.toolCallId];
+          if (!tool) return null;
+          return <ToolCard key={`tool-${seg.toolCallId}`} tool={tool} forceExpanded={allExpanded} />;
+        })}
       </div>
     </div>
   );

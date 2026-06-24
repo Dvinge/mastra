@@ -141,11 +141,14 @@ export default function App() {
     }
   };
 
-  // Length of the most recent assistant entry's text — changes on every
+  // Total text length of the most recent assistant entry — changes on every
   // streamed chunk, so the autoscroll effect can follow the stream smoothly
   // (not just when a whole new entry is appended).
   const lastTranscriptEntry = transcript.entries[transcript.entries.length - 1];
-  const streamingLen = lastTranscriptEntry?.kind === 'assistant' ? lastTranscriptEntry.text.length : 0;
+  const streamingLen =
+    lastTranscriptEntry?.kind === 'assistant'
+      ? lastTranscriptEntry.segments.reduce((n, s) => (s.kind === 'text' || s.kind === 'thinking' ? n + s.text.length : n), 0)
+      : 0;
 
   // Auto-scroll the transcript to follow new content. Only auto-follows when
   // the user is already near the bottom, so scrolling back to read history
@@ -174,8 +177,9 @@ export default function App() {
   // Show the "thinking" indicator while busy but before any assistant text has
   // streamed for the current turn.
   const lastEntry = transcript.entries[transcript.entries.length - 1];
-  const showWorkingIndicator =
-    busy && !(lastEntry?.kind === 'assistant' && lastEntry.streaming && lastEntry.text.length > 0);
+  const lastEntryHasText =
+    lastEntry?.kind === 'assistant' && lastEntry.segments.some(s => s.kind === 'text' && s.text.trim().length > 0);
+  const showWorkingIndicator = busy && !(lastEntry?.kind === 'assistant' && lastEntry.streaming && lastEntryHasText);
 
   // A restored active project from a pre-resourceId build won't have one yet;
   // backfill it so the session can connect. Runs once per project that needs it.

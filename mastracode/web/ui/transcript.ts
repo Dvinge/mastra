@@ -21,11 +21,29 @@ export interface ToolCall {
   output: string;
 }
 
+/**
+ * An ordered piece of an assistant turn. The harness streams an assistant
+ * message whose `content[]` interleaves text, thinking, and tool_call parts in
+ * execution order; we mirror that order here so the UI renders
+ * text → tool → text → tool exactly as it happened (matching the TUI), rather
+ * than collapsing all text into one blob and bucketing tools at the end.
+ *
+ * Tool segments hold only the tool id; the live tool state (args/output/
+ * status/result, which arrives on separate tool_* events) lives in the entry's
+ * `toolsById` map and is resolved at render time.
+ */
+export type AssistantSegment =
+  | { kind: 'text'; text: string }
+  | { kind: 'thinking'; text: string }
+  | { kind: 'tool'; toolCallId: string };
+
 export interface AssistantEntry {
   kind: 'assistant';
   id: string;
-  text: string;
-  tools: ToolCall[];
+  /** Ordered text / thinking / tool segments, in execution order. */
+  segments: AssistantSegment[];
+  /** Live tool state keyed by tool-call id, referenced by tool segments. */
+  toolsById: Record<string, ToolCall>;
   /** True while the model is still generating tokens for this message. */
   streaming: boolean;
 }
@@ -408,47 +426,82 @@ function hydrate(
     if (message.role === 'user') {
       entries.push({ kind: 'user', id: message.id, text: harnessMessageText(message) });
     } else if (message.role === 'assistant') {
-      entries.push(hydrateAssistant(message));
+      const { segments, toolsById } = buildSegments(message);
+      entries.push({ kind: 'assistant', id: message.id, segments, toolsById, streaming: false });
     }
     // 'system' messages aren't shown in the transcript.
   }
   return { ...initialTranscript, entries, modeId, modelId, threadId };
 }
 
-/** Reconstruct an assistant entry (text + tool cards) from a persisted message. */
-function hydrateAssistant(message: HarnessMessage): AssistantEntry {
-  let text = '';
-  const tools: ToolCall[] = [];
+/**
+ * Walk a message's content parts in order and produce ordered segments plus the
+ * tool state they reference. `prevTools` carries forward live tool runtime
+ * (streamed argsText / shell output / status) captured from tool_* events,
+ * which the persisted content parts don't include.
+ *
+ * This mirrors the TUI's `AssistantMessageComponent`, which renders each
+ * content part where it appears instead of concatenating text and grouping
+ * tools.
+ */
+function buildSegments(
+  message: HarnessMessage,
+  prevTools: Record<string, ToolCall> = {},
+): { segments: AssistantSegment[]; toolsById: Record<string, ToolCall> } {
+  const segments: AssistantSegment[] = [];
+  const toolsById: Record<string, ToolCall> = {};
+  let toolSeq = 0;
   for (const part of message.content) {
     if (part.type === 'text' && typeof part.text === 'string') {
-      text += part.text;
+      if (part.text.length > 0) segments.push({ kind: 'text', text: part.text });
+    } else if (part.type === 'thinking' && typeof part.thinking === 'string') {
+      if (part.thinking.trim().length > 0) segments.push({ kind: 'thinking', text: part.thinking });
     } else if (part.type === 'tool_call') {
+      const toolCallId = part.id ?? `${message.id}-tool-${toolSeq++}`;
       const result = message.content.find(c => c.type === 'tool_result' && c.id === part.id);
-      tools.push({
-        toolCallId: part.id ?? `${message.id}-${tools.length}`,
-        toolName: part.name ?? 'tool',
-        argsText: '',
-        args: part.args,
-        status: result?.isError ? 'error' : 'done',
-        result: result?.result,
-        output: '',
-      });
+      const prev = prevTools[toolCallId];
+      toolsById[toolCallId] = {
+        toolCallId,
+        toolName: part.name ?? prev?.toolName ?? 'tool',
+        // Keep streamed args text; fall back to nothing.
+        argsText: prev?.argsText ?? '',
+        args: part.args ?? prev?.args,
+        // A present tool_result means the call resolved; otherwise keep the
+        // live status (running) seeded from tool_* events.
+        status: result ? (result.isError ? 'error' : 'done') : prev?.status ?? 'running',
+        result: result?.result ?? prev?.result,
+        output: prev?.output ?? '',
+      };
+      segments.push({ kind: 'tool', toolCallId });
     }
-    // 'thinking' and 'tool_result' parts are folded in above / not shown directly.
+    // 'tool_result' parts are folded into their tool_call above.
   }
-  return { kind: 'assistant', id: message.id, text, tools, streaming: false };
+  return { segments, toolsById };
 }
 
 function upsertAssistant(state: TranscriptState, message: HarnessMessage, streaming: boolean): TranscriptState {
   if (message.role !== 'assistant') return state;
-  const text = harnessMessageText(message);
   const entries = [...state.entries];
   const idx = entries.findIndex(e => e.kind === 'assistant' && e.id === message.id);
-  if (idx === -1) {
-    entries.push({ kind: 'assistant', id: message.id, text, tools: [], streaming });
-  } else {
-    entries[idx] = { ...(entries[idx] as AssistantEntry), text, streaming };
+  const prev = idx !== -1 ? (entries[idx] as AssistantEntry) : undefined;
+  const { segments, toolsById } = buildSegments(message, prev?.toolsById);
+
+  // Preserve any tools (and their segments) that arrived via tool_* events but
+  // aren't yet reflected in the streamed content — keeps a tool visible the
+  // instant it starts, before the next message_update lands.
+  if (prev) {
+    for (const seg of prev.segments) {
+      if (seg.kind === 'tool' && !toolsById[seg.toolCallId]) {
+        segments.push(seg);
+        const carried = prev.toolsById[seg.toolCallId];
+        if (carried) toolsById[seg.toolCallId] = carried;
+      }
+    }
   }
+
+  const entry: AssistantEntry = { kind: 'assistant', id: message.id, segments, toolsById, streaming };
+  if (idx === -1) entries.push(entry);
+  else entries[idx] = entry;
   return { ...state, entries };
 }
 
@@ -457,7 +510,8 @@ function hasAssistantText(state: TranscriptState): boolean {
   const idx = latestAssistantIndex(state.entries);
   if (idx === -1) return false;
   const entry = state.entries[idx];
-  return entry.kind === 'assistant' && entry.text.trim().length > 0;
+  if (entry.kind !== 'assistant') return false;
+  return entry.segments.some(s => s.kind === 'text' && s.text.trim().length > 0);
 }
 
 /** Find the latest assistant entry, creating one if none exists. */
@@ -477,25 +531,35 @@ function withTool(
   const entries = [...state.entries];
   let idx = latestAssistantIndex(entries);
   if (idx === -1) {
-    entries.push({ kind: 'assistant', id: `assistant-tools-${Date.now()}`, text: '', tools: [], streaming: false });
+    entries.push({
+      kind: 'assistant',
+      id: `assistant-tools-${Date.now()}`,
+      segments: [],
+      toolsById: {},
+      streaming: false,
+    });
     idx = entries.length - 1;
   }
   const assistant = entries[idx] as AssistantEntry;
-  const tools = [...assistant.tools];
-  let tIdx = tools.findIndex(t => t.toolCallId === toolCallId);
-  if (tIdx === -1) {
-    tools.push({
-      toolCallId,
-      toolName: seed?.toolName ?? 'tool',
-      argsText: '',
-      args: seed?.args,
-      status: 'running',
-      output: '',
-    });
-    tIdx = tools.length - 1;
-  }
-  tools[tIdx] = update(tools[tIdx]);
-  entries[idx] = { ...assistant, tools };
+  const toolsById = { ...assistant.toolsById };
+  const existing = toolsById[toolCallId] ?? {
+    toolCallId,
+    toolName: seed?.toolName ?? 'tool',
+    argsText: '',
+    args: seed?.args,
+    status: 'running' as const,
+    output: '',
+  };
+  toolsById[toolCallId] = update(existing);
+
+  // Ensure a tool segment exists in execution order. A tool's first event can
+  // arrive before the message_update that would place it from content, so we
+  // append the segment here to keep it inline at the point it started.
+  const segments = assistant.segments.some(s => s.kind === 'tool' && s.toolCallId === toolCallId)
+    ? assistant.segments
+    : [...assistant.segments, { kind: 'tool' as const, toolCallId }];
+
+  entries[idx] = { ...assistant, segments, toolsById };
   return { ...state, entries };
 }
 
